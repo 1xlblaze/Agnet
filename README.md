@@ -75,3 +75,21 @@ See [`docs/README.md`](docs/README.md).
 ## Status
 
 Working local MVP covering M0–M11 flows with deterministic analyzers, advisory LLM, sandboxed agent stub, policy engine, preview/prod deploy simulation, and certificates. Real GitHub App OAuth, AWS ECS preview clusters, and live OpenAI/Codex providers are wired as interfaces/env and ready for production credentials.
+
+## Deploy (Supabase + Vercel)
+
+See [`docs/25-supabase-vercel.md`](docs/25-supabase-vercel.md).
+
+```bash
+# 1) Create GitHub repo
+GH_TOKEN=ghp_... bash scripts/create-github-repo.sh
+
+# 2) Apply schema to Supabase Postgres
+DATABASE_URL='postgresql://postgres:...@aws-0-....pooler.supabase.com:6543/postgres' \
+  bash scripts/setup-supabase.sh
+
+# 3) Deploy apps/web to Vercel
+VERCEL_TOKEN=... \
+DATABASE_URL=... SUPABASE_URL=... SUPABASE_SERVICE_ROLE_KEY=... NEXT_PUBLIC_SUPABASE_URL=... \
+  bash scripts/deploy-vercel.sh
+```

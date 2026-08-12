@@ -31,3 +31,4 @@ Coding agents must read `AGENTGUARD.md` first, then the topic doc for the curren
 | 22 | [22-billing.md](22-billing.md) | Pricing (later) |
 | 23 | [23-roadmap.md](23-roadmap.md) | M0–M11 |
 | 24 | [24-codex-development-rules.md](24-codex-development-rules.md) | Binding coding rules |
+| 25 | [25-supabase-vercel.md](25-supabase-vercel.md) | Supabase + Vercel deploy |

@@ -17,7 +17,7 @@ export function CreateProjectButton() {
           start(async () => {
             setErr("");
             try {
-              const api = process.env.NEXT_PUBLIC_API_URL || "http://127.0.0.1:8080";
+              const api = process.env.NEXT_PUBLIC_API_URL || "";
               const res = await fetch(`${api}/api/v1/projects/generate`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },

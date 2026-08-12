@@ -37,6 +37,7 @@
 | [22-billing.md](docs/22-billing.md) | Pricing (post-MVP) |
 | [23-roadmap.md](docs/23-roadmap.md) | Milestones M0–M11 |
 | [24-codex-development-rules.md](docs/24-codex-development-rules.md) | Coding agent rules |
+| [25-supabase-vercel.md](docs/25-supabase-vercel.md) | Supabase + Vercel deploy |
 
 ---
 
