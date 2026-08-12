@@ -1,0 +1,8 @@
+.git
+apps/web/node_modules
+apps/web/.next
+bin
+.env
+**/*.log
+tmp
+node_modules

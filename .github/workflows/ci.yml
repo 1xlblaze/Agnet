@@ -1,0 +1,54 @@
+name: ci
+on:
+  push:
+  pull_request:
+jobs:
+  go:
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: agentguard
+          POSTGRES_PASSWORD: agentguard
+          POSTGRES_DB: agentguard
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U agentguard"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+      redis:
+        image: redis:7-alpine
+        ports: ["6379:6379"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version: "1.22"
+      - name: Format check
+        run: test -z "$(gofmt -l .)"
+      - name: Vet
+        run: go vet ./...
+      - name: Test
+        run: go test ./...
+        env:
+          DATABASE_URL: postgres://agentguard:agentguard@127.0.0.1:5432/agentguard?sslmode=disable
+          REDIS_URL: redis://127.0.0.1:6379/0
+      - name: Build
+        run: |
+          go build -o bin/api ./services/api/cmd/api
+          go build -o bin/worker ./services/worker/cmd/worker
+          go build -o bin/analyzer ./services/analyzer/cmd/analyzer
+  web:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: apps/web
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+      - run: npm install
+      - run: npm run build
