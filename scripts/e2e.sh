@@ -43,7 +43,7 @@ def req(method, path, body=None):
 print("==> create PR")
 pr = req("POST", "/api/v1/pull-requests", {
     "repository_id": repo_id,
-    "github_pr_number": 184,
+    "github_pr_number": 187,
     "base_sha": "aaaaaaaa",
     "head_sha": "a93f21c",
     "title": "Add payment retry",

@@ -41,7 +41,8 @@ func (h HeuristicProvider) Analyze(ctx context.Context, input AnalysisInput) (An
 	_ = ctx
 	var findings []FindingOut
 	lower := strings.ToLower(input.Diff)
-	if strings.Contains(lower, "retry") && !strings.Contains(lower, "idempoten") {
+	hasFix := strings.Contains(lower, "idempotency key required") || strings.Contains(lower, "chargeonce") || strings.Contains(lower, "idempotencykey")
+	if strings.Contains(lower, "retry") && !hasFix {
 		findings = append(findings, FindingOut{
 			Severity: "high", Category: "reliability", Title: "Duplicate payment risk",
 			Description:    "Payment retry can duplicate transactions without an idempotency key.",

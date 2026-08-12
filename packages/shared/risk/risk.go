@@ -104,7 +104,9 @@ func detectFindings(analysisID uuid.UUID, diff string) []models.Finding {
 	if strings.Contains(lower, "password") || strings.Contains(lower, "api_key") || strings.Contains(lower, "secret=") {
 		add("CRITICAL", "security", "Possible hardcoded secret", "Diff appears to introduce secret-like material.", "", 0, "Remove secrets; use a secret manager.", 0.9)
 	}
-	if strings.Contains(lower, "retry") && !strings.Contains(lower, "idempoten") {
+	hasRetry := strings.Contains(lower, "retry")
+	hasIdempotencyFix := strings.Contains(lower, "idempotency key required") || strings.Contains(lower, "chargeonce") || strings.Contains(lower, "idempotencykey")
+	if hasRetry && !hasIdempotencyFix {
 		add("HIGH", "reliability", "Duplicate payment risk", "Retry path may execute a side-effecting write more than once without idempotency.", "payment/service.go", 84, "Introduce an idempotency key and make the write path idempotent.", 0.94)
 	}
 	if strings.Contains(lower, "exec.command") || strings.Contains(lower, "os.system") || strings.Contains(lower, "child_process") {
