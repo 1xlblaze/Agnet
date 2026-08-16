@@ -4,6 +4,8 @@ export type GapItem = {
   detail: string;
   weight: number;
   source: string;
+  passed?: boolean;
+  recommendation?: string;
 };
 
 export function extractGapsFromReport(report: Record<string, unknown> | null | undefined): GapItem[] {

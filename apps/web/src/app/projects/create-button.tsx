@@ -11,7 +11,7 @@ export function CreateProjectButton() {
   return (
     <div>
       <button
-        className="bg-moss px-4 py-2 text-sm font-semibold text-foam transition hover:brightness-110 disabled:opacity-60"
+        className="btn-primary"
         disabled={pending}
         onClick={() => {
           start(async () => {
@@ -30,7 +30,7 @@ export function CreateProjectButton() {
           });
         }}
       >
-        {pending ? "Creating…" : "Create Project"}
+        {pending ? "Creating…" : "Demo project"}
       </button>
       {err ? <p className="mt-2 text-xs text-ember">{err}</p> : null}
     </div>

@@ -11,7 +11,7 @@ export function AnalyzeButton({ repositoryId, label = "Run baseline scan" }: { r
   return (
     <div>
       <button
-        className="border border-moss/50 px-3 py-1.5 text-xs font-semibold uppercase tracking-wider text-moss transition hover:bg-moss/10 disabled:opacity-60"
+        className="btn-secondary text-xs"
         disabled={pending}
         onClick={() => {
           start(async () => {

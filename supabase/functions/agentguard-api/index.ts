@@ -405,6 +405,7 @@ async function chatAboutRepo(repoId: string, message: string) {
     repository_id: repoId,
     question: message,
     answer: result.answer,
+    intent: result.intent,
     gaps: result.gaps,
     sources: result.sources,
     production_confidence: reportData.production_confidence,

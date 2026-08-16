@@ -47,13 +47,13 @@ export default async function DashboardPage() {
           .
         </p>
       ) : (
-        <ul className="space-y-4">
+        <ul className="grid gap-4 sm:grid-cols-2">
           {repos.map((repo) => {
             const scores = repo.report?.scores ?? {};
             const confidence = repo.production_confidence || repo.report?.production_confidence || 0;
             const gapCount = repo.gap_count ?? repo.report?.gaps?.length ?? 0;
             return (
-              <li key={repo.id} className="border border-foam/10 bg-ink/35 p-4 sm:p-6">
+              <li key={repo.id} className="card p-5 transition hover:border-moss/30">
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div>
                     <Link href={`/projects/${repo.project_id}`} className="font-display text-2xl text-foam hover:underline">
