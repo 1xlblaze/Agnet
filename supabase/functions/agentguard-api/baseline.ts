@@ -1,3 +1,5 @@
+import type { AstIndex } from "./ast-extract.ts";
+
 type Graph = {
   nodes: { id: string; type: string; name: string }[];
   edges: { from: string; to: string; type: string }[];
@@ -255,14 +257,18 @@ export function buildBaselineDocument(input: {
   name: string;
   paths: string[];
   languages: Record<string, number>;
+  graph?: Graph;
+  ast?: AstIndex;
 }) {
-  const { repositoryId, owner, name, paths, languages } = input;
+  const { repositoryId, owner, name, paths, languages, ast } = input;
   const fullName = `${owner}/${name}`;
   const githubUrl = `https://github.com/${fullName}`;
-  const graph = buildGraphFromPaths(name, paths);
+  const graph = input.graph ?? buildGraphFromPaths(name, paths);
   const scores = scoreBaseline(paths, graph, languages);
   const langNames = Object.keys(languages);
-  const databases = graph.nodes.filter((n) => n.type === "Database").map((n) => n.name);
+  const tableNodes = graph.nodes.filter((n) => n.type === "Table").map((n) => n.name);
+  const dbNodes = graph.nodes.filter((n) => n.type === "Database").map((n) => n.name);
+  const databases = [...new Set([...dbNodes, ...tableNodes])];
   const services = graph.nodes.filter((n) => n.type === "Service").map((n) => n.name);
   const scannedAt = new Date().toISOString();
 
@@ -274,6 +280,8 @@ export function buildBaselineDocument(input: {
     file_count: paths.length,
     paths_sample: paths.slice(0, 20),
     language_bytes: languages,
+    ast_symbols: ast?.symbols?.length ?? 0,
+    ast_files_parsed: ast?.files_parsed ?? 0,
   };
 
   const baselineDoc = {
@@ -287,6 +295,7 @@ export function buildBaselineDocument(input: {
     graph,
     scores,
     baseline: baselineInfo,
+    ast: ast ?? null,
   };
 
   const summaryDoc = {

@@ -1,6 +1,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient, type SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
-import { buildBaselineDocument, fetchGitHubRepo } from "./baseline.ts";
+import { buildGraphFromPaths, fetchGitHubRepo, scoreBaseline } from "./baseline.ts";
+import { extractAstFromPaths, type AstIndex } from "./ast-extract.ts";
 import { answerRepoQuestion, extractGaps } from "./repo-rag.ts";
 
 const cors = {
@@ -475,12 +476,16 @@ async function analyzeRepository(repoId: string) {
   await sb.from("repositories").update({ status: "ANALYZING", updated_at: new Date().toISOString() }).eq("id", repoId);
 
   const { languages, paths } = await fetchGitHubRepo(repo.owner, repo.name);
+  const baseGraph = buildGraphFromPaths(repo.name, paths);
+  const { ast, graph } = await extractAstFromPaths(repo.owner, repo.name, paths, repo.name, baseGraph);
   const { baselineDoc, summaryDoc } = buildBaselineDocument({
     repositoryId: repoId,
     owner: repo.owner,
     name: repo.name,
     paths,
     languages,
+    graph,
+    ast,
   });
 
   const baselineVersion = await upsertReport(sb, repoId, repo.project_id, "baseline", baselineDoc);

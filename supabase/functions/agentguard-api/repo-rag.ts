@@ -86,15 +86,31 @@ export function extractGaps(report: Record<string, unknown>): GapItem[] {
   return extractAllEvidence(report).filter((e) => !e.passed);
 }
 
+type AstContext = {
+  symbols: Array<{ kind: string; name: string; file: string; exported?: boolean; signature?: string }>;
+  chunks: Array<{ id: string; text: string; dimension?: string; file?: string }>;
+  files_parsed?: number;
+};
+
 function getBaselineContext(report: Record<string, unknown>) {
   const baselineDoc = (report.baseline as Record<string, unknown>) || {};
   const info = (baselineDoc.baseline as Record<string, unknown>) || {};
   const graph = (baselineDoc.graph as RepoGraph) || { nodes: [], edges: [] };
+  const astRaw = baselineDoc.ast as AstContext | null | undefined;
+  const ast =
+    astRaw && Array.isArray(astRaw.symbols)
+      ? {
+          symbols: astRaw.symbols,
+          chunks: astRaw.chunks ?? [],
+          files_parsed: astRaw.files_parsed,
+        }
+      : undefined;
   const pathsSample = (info.paths_sample as string[]) || [];
-  const allPaths = pathsSample; // sample used for inference; full tree is in file_count
+  const allPaths = pathsSample;
   return {
     info,
     graph,
+    ast,
     pathsSample,
     languages: (info.languages as string[]) || [],
     services: (info.services as string[]) || [],
@@ -129,9 +145,20 @@ function inferStructureSignals(paths: string[]): string[] {
   return signals;
 }
 
-function inferRepoPurpose(name: string, languages: string[], paths: string[], services: string[]): string {
+function inferRepoPurpose(name: string, languages: string[], paths: string[], services: string[], ast?: ReturnType<typeof getBaselineContext>["ast"]): string {
   const blob = `${name} ${paths.join(" ")}`.toLowerCase();
   const hints: string[] = [];
+
+  if (ast?.symbols?.length) {
+    const exportedFns = ast.symbols.filter((s) => s.kind === "function" && s.exported).slice(0, 5);
+    const tables = ast.symbols.filter((s) => s.kind === "table").slice(0, 4);
+    if (exportedFns.length) {
+      hints.push(`entrypoints/APIs: ${exportedFns.map((s) => s.name).join(", ")}`);
+    }
+    if (tables.length) {
+      hints.push(`data model tables: ${tables.map((s) => s.name).join(", ")}`);
+    }
+  }
 
   if (/foundry|workflow|pipeline|orchestrat/.test(blob)) {
     hints.push("workflow / automation platform");
@@ -212,6 +239,46 @@ function buildContextChunks(report: Record<string, unknown>): RepoChunk[] {
   const ctx = getBaselineContext(report);
   const chunks: RepoChunk[] = [];
   let i = 0;
+
+  if (ctx.ast?.chunks?.length) {
+    for (const c of ctx.ast.chunks.slice(0, 40)) {
+      chunks.push({
+        id: `ast-${c.id}`,
+        dimension: c.dimension || "architecture",
+        text: c.text,
+        tokens: tokenize(c.text),
+        item: {
+          dimension: c.dimension || "architecture",
+          check: `ast_${c.id}`,
+          detail: c.text,
+          weight: 0,
+          source: "ast_extract",
+          passed: true,
+        },
+      });
+    }
+  }
+
+  if (ctx.ast?.symbols?.length) {
+    const symSummary = ctx.ast.symbols
+      .slice(0, 20)
+      .map((s) => `${s.kind} ${s.name} (${s.file})`)
+      .join("; ");
+    chunks.push({
+      id: `ctx-ast-summary`,
+      dimension: "architecture",
+      text: `AST symbols extracted from ${ctx.ast.files_parsed ?? 0} files: ${symSummary}`,
+      tokens: tokenize(symSummary),
+      item: {
+        dimension: "architecture",
+        check: "ast_symbol_index",
+        detail: symSummary,
+        weight: 0,
+        source: "ast_extract",
+        passed: true,
+      },
+    });
+  }
 
   const structure = inferStructureSignals(ctx.paths);
   if (structure.length) {
@@ -340,7 +407,7 @@ function buildRepoAboutAnswer(
   report: Record<string, unknown>,
 ) {
   const ctx = getBaselineContext(report);
-  const purpose = inferRepoPurpose(fullName.split("/").pop() || fullName, ctx.languages, ctx.paths, ctx.services);
+  const purpose = inferRepoPurpose(fullName.split("/").pop() || fullName, ctx.languages, ctx.paths, ctx.services, ctx.ast);
   const structure = inferStructureSignals(ctx.paths);
   const graphSummary = formatGraphSummary(ctx.graph);
 
@@ -354,6 +421,7 @@ ${purpose}
 **Stack & scale**
 - Languages: **${ctx.languages.join(", ") || "unknown"}**
 - Files tracked: **${ctx.fileCount ?? "—"}**
+- AST symbols parsed: **${ctx.ast?.symbols?.length ?? 0}** (from **${ctx.ast?.files_parsed ?? 0}** source files)
 - Services: **${ctx.services.join(", ") || "single package"}**
 - Databases in graph: **${ctx.databases.join(", ") || "none detected"}**
 - Production confidence: **${confidence}/100**
@@ -386,6 +454,14 @@ function buildArchitectureOverview(
   const structure = inferStructureSignals(ctx.paths);
   const graphSummary = formatGraphSummary(ctx.graph);
   const pathSample = formatPathSample(ctx.pathsSample);
+
+  const symbolSection =
+    ctx.ast?.symbols?.length
+      ? `\n\n**Extracted symbols** (${ctx.ast.symbols.length} from ${ctx.ast.files_parsed ?? 0} files)\n${ctx.ast.symbols
+          .slice(0, 15)
+          .map((s) => `  • ${s.kind} **${s.name}** — ${s.file}${s.signature ? ` (${s.signature.slice(0, 60)})` : ""}`)
+          .join("\n")}`
+      : "";
   const archPassed = passed.filter((p) => p.dimension === "architecture");
   const archGaps = gaps.filter((g) => g.dimension === "architecture");
 
@@ -401,9 +477,9 @@ function buildArchitectureOverview(
     intent: "architecture_overview",
     answer: `**Architecture overview** for **${fullName}** (score: **${archScore}/100**, confidence: **${confidence}/100**)
 
-This answer is built from the **repository graph** and **path tree scan** generated during baseline analysis — the same structural signals AgentGuard uses for blast-radius and dependency reasoning.
+This answer is built from the **repository graph**, **AST symbol extraction**, and **path tree scan** from baseline analysis.
 
-${graphSummary}
+${graphSummary}${symbolSection}
 
 **Layout & tooling**
 ${structure.length ? structure.map((s) => `• ${s}`).join("\n") : "• Single-package application layout"}
@@ -417,9 +493,9 @@ ${pathSample}${healthSection}
     gaps: archGaps.slice(0, 2),
     sources: [
       "architecture_graph",
+      "ast_symbols",
       "path_structure",
-      ...ctx.graph.nodes.slice(0, 4).map((n) => `graph_${n.type.toLowerCase()}`),
-      ...structure.slice(0, 3).map((_, i) => `structure_${i}`),
+      ...(ctx.ast?.symbols?.slice(0, 5).map((s) => `ast_${s.name}`) ?? []),
     ],
   };
 }
