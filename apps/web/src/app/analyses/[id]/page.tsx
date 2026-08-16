@@ -1,34 +1,57 @@
+import { PageHeader } from "@/components/ui/page-header";
+import { StatCard } from "@/components/ui/stat-card";
 import { apiGet } from "@/lib/api";
 
 export default async function AnalysisDetail({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const data = await apiGet<any>(`/api/v1/analyses/${id}`);
   const findings = data.findings || [];
+
   return (
-    <section className="space-y-8">
-      <div>
-        <h1 className="font-display text-4xl text-foam">Analysis</h1>
-        <p className="mt-2 text-sand/80">{data.analysis?.status}</p>
-      </div>
+    <div className="space-y-8">
+      <PageHeader
+        label="Analysis"
+        title="Security &amp; reliability findings"
+        description={data.analysis?.status}
+      />
+
       {data.risk ? (
-        <div className="grid gap-3 md:grid-cols-3">
-          <div className="border border-foam/10 p-4"><p className="text-xs text-sand/70">Risk</p><p className="font-display text-3xl">{data.risk.overall_risk}</p></div>
-          <div className="border border-foam/10 p-4"><p className="text-xs text-sand/70">Blast Radius</p><p className="font-display text-3xl">{data.risk.blast_radius}</p></div>
-          <div className="border border-foam/10 p-4"><p className="text-xs text-sand/70">Decision</p><p className="font-display text-3xl">{data.risk.decision}</p></div>
+        <div className="grid gap-4 sm:grid-cols-3">
+          <StatCard label="Risk" value={data.risk.overall_risk} />
+          <StatCard label="Blast radius" value={data.risk.blast_radius} />
+          <StatCard label="Decision" value={data.risk.decision} accent />
         </div>
       ) : null}
+
       <div className="space-y-4">
-        {findings.map((f: any) => (
-          <article key={f.id} className="border border-foam/10 bg-ink/30 p-4">
-            <p className="text-xs uppercase tracking-wider text-ember">{f.severity} · {f.category}</p>
-            <h2 className="font-display mt-1 text-2xl">{f.title}</h2>
-            <p className="mt-2 text-sm text-sand/90">{f.description}</p>
-            {f.file ? <p className="mt-2 font-mono text-xs">{f.file}:{f.line}</p> : null}
-            <p className="mt-3 text-sm"><strong>Recommendation:</strong> {f.recommendation}</p>
-            <p className="mt-1 text-xs text-sand/70">Confidence {(f.confidence * 100).toFixed(0)}% · {f.status}</p>
-          </article>
-        ))}
+        {findings.length === 0 ? (
+          <div className="glass-card p-8 text-center text-text-secondary">No findings in this analysis.</div>
+        ) : (
+          findings.map((f: any) => (
+            <article key={f.id} className="glass-card p-5">
+              <div className="flex flex-wrap items-center gap-2">
+                <span className={f.severity === "high" ? "badge-danger" : f.severity === "medium" ? "badge-warn" : "badge-neutral"}>
+                  {f.severity}
+                </span>
+                <span className="badge-neutral">{f.category}</span>
+              </div>
+              <h2 className="mt-3 font-display text-xl text-text-primary">{f.title}</h2>
+              <p className="mt-2 text-sm text-text-secondary">{f.description}</p>
+              {f.file ? (
+                <p className="mt-2 font-mono text-xs text-text-muted">
+                  {f.file}:{f.line}
+                </p>
+              ) : null}
+              <p className="mt-3 rounded-lg bg-accent/5 px-3 py-2 text-sm text-text-secondary">
+                <strong className="text-text-primary">Recommendation:</strong> {f.recommendation}
+              </p>
+              <p className="mt-2 text-xs text-text-muted">
+                Confidence {(f.confidence * 100).toFixed(0)}% · {f.status}
+              </p>
+            </article>
+          ))
+        )}
       </div>
-    </section>
+    </div>
   );
 }

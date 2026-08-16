@@ -5,8 +5,8 @@ import { useEffect, useRef, useState, useTransition } from "react";
 const SUGGESTIONS = [
   "Where does this repo lack?",
   "What security gaps exist?",
-  "How can I improve?",
-  "What's good about reliability?",
+  "How can I improve reliability?",
+  "What's good about the architecture?",
 ];
 
 type Message = {
@@ -20,7 +20,7 @@ function renderText(text: string) {
   return parts.map((part, i) => {
     if (part.startsWith("**") && part.endsWith("**")) {
       return (
-        <strong key={i} className="font-semibold text-foam">
+        <strong key={i} className="font-semibold text-text-primary">
           {part.slice(2, -2)}
         </strong>
       );
@@ -33,7 +33,7 @@ function formatLines(text: string) {
   return text.split("\n").map((line, i) => {
     if (line.startsWith("  → Fix:")) {
       return (
-        <p key={i} className="ml-4 mt-1 text-xs text-moss/90">
+        <p key={i} className="ml-4 mt-1 text-xs text-accent">
           {renderText(line)}
         </p>
       );
@@ -87,21 +87,30 @@ export function RepoChat({ repositoryId, repoName }: { repositoryId: string; rep
   }
 
   return (
-    <div className="card overflow-hidden">
-      <div className="border-b border-foam/10 bg-ink/40 px-5 py-4">
-        <p className="text-[11px] font-semibold uppercase tracking-[0.15em] text-moss">Repository assistant</p>
-        <p className="mt-1 text-sm text-sand/80">
-          Ask about gaps, strengths, or fixes for <span className="text-foam">{repoName}</span>
-        </p>
+    <div className="glass-card flex flex-col overflow-hidden">
+      <div className="border-b border-border bg-surface-raised/50 px-5 py-4">
+        <div className="flex items-center gap-3">
+          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-accent/10">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#34d399" strokeWidth="2">
+              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
+            </svg>
+          </div>
+          <div>
+            <p className="text-sm font-medium text-text-primary">Repository assistant</p>
+            <p className="text-xs text-text-muted">
+              Ask about gaps, strengths, or fixes for <span className="text-text-secondary">{repoName}</span>
+            </p>
+          </div>
+        </div>
       </div>
 
-      <div className="flex flex-wrap gap-2 border-b border-foam/10 px-4 py-3">
+      <div className="flex flex-wrap gap-2 border-b border-border px-4 py-3">
         {SUGGESTIONS.map((s) => (
           <button
             key={s}
             type="button"
             disabled={pending}
-            className="rounded-full border border-foam/15 bg-ink/30 px-3 py-1.5 text-xs text-sand/85 transition hover:border-moss/50 hover:bg-moss/10 hover:text-foam disabled:opacity-50"
+            className="rounded-full border border-border bg-surface-raised px-3 py-1.5 text-xs text-text-secondary transition hover:border-accent/40 hover:bg-accent/5 hover:text-text-primary disabled:opacity-50"
             onClick={() => ask(s)}
           >
             {s}
@@ -109,24 +118,31 @@ export function RepoChat({ repositoryId, repoName }: { repositoryId: string; rep
         ))}
       </div>
 
-      <div className="h-80 space-y-4 overflow-y-auto px-4 py-4">
+      <div className="scrollbar-thin h-[28rem] space-y-4 overflow-y-auto px-4 py-4">
         {messages.length === 0 ? (
-          <div className="flex h-full flex-col items-center justify-center text-center">
-            <p className="text-sm text-sand/60">Ask a specific question to get targeted answers.</p>
-            <p className="mt-1 text-xs text-sand/45">Different questions return different evidence — not a generic summary.</p>
+          <div className="flex h-full flex-col items-center justify-center px-4 text-center">
+            <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-white/5 text-xl text-text-muted">
+              ?
+            </div>
+            <p className="text-sm text-text-secondary">Ask a specific question to get targeted answers.</p>
+            <p className="mt-1 text-xs text-text-muted">
+              Different questions return different evidence — not a generic summary.
+            </p>
           </div>
         ) : null}
         {messages.map((m, i) => (
           <div key={i} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
             <div
-              className={`max-w-[90%] rounded-2xl px-4 py-3 ${
+              className={`max-w-[88%] rounded-2xl px-4 py-3 ${
                 m.role === "user"
-                  ? "rounded-br-md bg-moss text-foam"
-                  : "rounded-bl-md border border-foam/10 bg-ink/50 text-sand/90"
+                  ? "rounded-br-md bg-accent text-canvas"
+                  : "rounded-bl-md border border-border bg-surface-raised text-text-secondary"
               }`}
             >
               {m.role === "assistant" && m.intent ? (
-                <p className="mb-2 text-[10px] uppercase tracking-wider text-sand/45">{m.intent.replace(/_/g, " ")}</p>
+                <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-text-muted">
+                  {m.intent.replace(/_/g, " ")}
+                </p>
               ) : null}
               <div>{formatLines(m.text)}</div>
             </div>
@@ -134,8 +150,15 @@ export function RepoChat({ repositoryId, repoName }: { repositoryId: string; rep
         ))}
         {pending ? (
           <div className="flex justify-start">
-            <div className="rounded-2xl rounded-bl-md border border-foam/10 bg-ink/50 px-4 py-3">
-              <p className="text-sm text-sand/50">Searching baseline evidence…</p>
+            <div className="rounded-2xl rounded-bl-md border border-border bg-surface-raised px-4 py-3">
+              <div className="flex items-center gap-2 text-sm text-text-muted">
+                <span className="inline-flex gap-1">
+                  <span className="h-1.5 w-1.5 animate-pulse-soft rounded-full bg-accent" />
+                  <span className="h-1.5 w-1.5 animate-pulse-soft rounded-full bg-accent [animation-delay:0.2s]" />
+                  <span className="h-1.5 w-1.5 animate-pulse-soft rounded-full bg-accent [animation-delay:0.4s]" />
+                </span>
+                Searching baseline evidence…
+              </div>
             </div>
           </div>
         ) : null}
@@ -143,28 +166,24 @@ export function RepoChat({ repositoryId, repoName }: { repositoryId: string; rep
       </div>
 
       <form
-        className="flex gap-2 border-t border-foam/10 bg-ink/20 p-4"
+        className="flex gap-2 border-t border-border bg-surface-raised/30 p-4"
         onSubmit={(e) => {
           e.preventDefault();
           ask(input);
         }}
       >
         <input
-          className="flex-1 rounded-lg border border-foam/15 bg-ink/60 px-4 py-2.5 text-sm text-foam placeholder:text-sand/40 focus:border-moss/50 focus:outline-none"
+          className="input flex-1"
           placeholder="e.g. What security issues exist?"
           value={input}
           onChange={(e) => setInput(e.target.value)}
           disabled={pending}
         />
-        <button
-          type="submit"
-          disabled={pending || !input.trim()}
-          className="rounded-lg bg-moss px-5 py-2.5 text-sm font-semibold text-foam transition hover:brightness-110 disabled:opacity-50"
-        >
+        <button type="submit" disabled={pending || !input.trim()} className="btn-primary shrink-0">
           Send
         </button>
       </form>
-      {err ? <p className="px-4 pb-3 text-xs text-ember">{err}</p> : null}
+      {err ? <p className="px-4 pb-3 text-xs text-danger">{err}</p> : null}
     </div>
   );
 }
