@@ -1,12 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const SUPABASE_URL = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
-const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const SUPABASE_URL =
+  process.env.SUPABASE_URL ||
+  process.env.NEXT_PUBLIC_SUPABASE_URL ||
+  "https://iltfwvonkotfdvtrhejv.supabase.co";
 
 async function proxy(req: NextRequest, segments: string[]) {
-  if (!SUPABASE_URL || !SERVICE_KEY) {
+  if (!SUPABASE_URL) {
     return NextResponse.json(
-      { error: { code: "config_error", message: "SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY are required" } },
+      { error: { code: "config_error", message: "SUPABASE_URL or NEXT_PUBLIC_SUPABASE_URL is required" } },
       { status: 500 },
     );
   }
@@ -16,8 +18,6 @@ async function proxy(req: NextRequest, segments: string[]) {
   const target = `${SUPABASE_URL}/functions/v1/agentguard-api/api/v1/${suffix}${url.search}`;
 
   const headers = new Headers();
-  headers.set("Authorization", `Bearer ${SERVICE_KEY}`);
-  headers.set("apikey", SERVICE_KEY);
   const contentType = req.headers.get("content-type");
   if (contentType) headers.set("Content-Type", contentType);
 
