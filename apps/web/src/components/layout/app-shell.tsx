@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
+import { ThemeToggle } from "@/components/theme/theme-toggle";
 
 const NAV = [
   { href: "/", label: "Dashboard", short: "Home" },
@@ -12,10 +13,10 @@ const NAV = [
 ];
 
 function NavIcon({ name, active }: { name: string; active: boolean }) {
-  const stroke = active ? "#34d399" : "#5f7a70";
+  const cls = active ? "text-accent" : "text-text-muted";
   const icons: Record<string, React.ReactNode> = {
     "/": (
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={stroke} strokeWidth="2">
+      <svg className={cls} width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
         <rect x="3" y="3" width="7" height="7" rx="1" />
         <rect x="14" y="3" width="7" height="7" rx="1" />
         <rect x="3" y="14" width="7" height="7" rx="1" />
@@ -23,27 +24,31 @@ function NavIcon({ name, active }: { name: string; active: boolean }) {
       </svg>
     ),
     "/projects": (
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={stroke} strokeWidth="2">
+      <svg className={cls} width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
         <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20" />
         <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z" />
       </svg>
     ),
     "/pull-requests": (
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={stroke} strokeWidth="2">
+      <svg className={cls} width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
         <circle cx="6" cy="6" r="3" />
         <circle cx="18" cy="18" r="3" />
         <path d="M6 9v3a3 3 0 0 0 3 3h6" />
       </svg>
     ),
     "/deployments": (
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke={stroke} strokeWidth="2">
+      <svg className={cls} width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
         <path d="M12 2L2 7l10 5 10-5-10-5z" />
         <path d="M2 17l10 5 10-5" />
         <path d="M2 12l10 5 10-5" />
       </svg>
     ),
   };
-  return <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/5">{icons[name]}</span>;
+  return (
+    <span className={`flex h-8 w-8 items-center justify-center rounded-lg ${active ? "bg-accent/10" : "bg-surface-overlay"}`}>
+      {icons[name]}
+    </span>
+  );
 }
 
 function NavLink({ href, label, onClick }: { href: string; label: string; onClick?: () => void }) {
@@ -55,8 +60,8 @@ function NavLink({ href, label, onClick }: { href: string; label: string; onClic
       onClick={onClick}
       className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all ${
         active
-          ? "bg-accent/12 text-accent shadow-sm ring-1 ring-accent/20"
-          : "text-text-secondary hover:bg-white/5 hover:text-text-primary"
+          ? "bg-accent/10 text-accent shadow-sm ring-1 ring-accent/20"
+          : "text-text-secondary hover:bg-surface-overlay hover:text-text-primary"
       }`}
     >
       <NavIcon name={href} active={active} />
@@ -97,14 +102,10 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         <div className="border-b border-border px-5 py-6">
           <Link href="/" className="group block">
             <div className="flex items-center gap-3">
-              <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-accent/15 ring-1 ring-accent/25">
-                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#34d399" strokeWidth="2">
-                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-                </svg>
-              </div>
+              <div className="agent-orb text-[10px] font-bold">AG</div>
               <div>
                 <p className="font-display text-lg font-semibold text-text-primary">AgentGuard</p>
-                <p className="text-[11px] text-text-muted">Production control plane</p>
+                <p className="text-[11px] text-text-muted">RAG-powered control plane</p>
               </div>
             </div>
           </Link>
@@ -114,7 +115,8 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             <NavLink key={item.href} href={item.href} label={item.label} />
           ))}
         </nav>
-        <div className="border-t border-border p-4">
+        <div className="space-y-2 border-t border-border p-4">
+          <ThemeToggle />
           <Link href="/projects" className="btn-primary w-full text-center">
             Connect repository
           </Link>
@@ -123,30 +125,32 @@ export function AppShell({ children }: { children: React.ReactNode }) {
 
       <div className="fixed inset-x-0 top-0 z-50 flex items-center justify-between border-b border-border bg-surface/95 px-4 py-3 backdrop-blur-xl lg:hidden">
         <Link href="/" className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-accent/15">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#34d399" strokeWidth="2">
-              <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-            </svg>
-          </div>
+          <div className="agent-orb h-8 w-8 text-[9px]">AG</div>
           <span className="font-display text-lg font-semibold">AgentGuard</span>
         </Link>
-        <button type="button" className="btn-ghost px-3 py-2" onClick={() => setOpen(!open)} aria-label="Toggle menu">
-          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            {open ? <path d="M18 6L6 18M6 6l12 12" /> : <path d="M4 6h16M4 12h16M4 18h16" />}
-          </svg>
-        </button>
+        <div className="flex items-center gap-1">
+          <ThemeToggle compact />
+          <button type="button" className="btn-ghost px-3 py-2" onClick={() => setOpen(!open)} aria-label="Toggle menu">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+              {open ? <path d="M18 6L6 18M6 6l12 12" /> : <path d="M4 6h16M4 12h16M4 18h16" />}
+            </svg>
+          </button>
+        </div>
       </div>
 
       {open ? (
         <div className="fixed inset-0 z-40 lg:hidden">
-          <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={() => setOpen(false)} />
+          <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={() => setOpen(false)} />
           <aside className="absolute inset-y-0 left-0 w-72 border-r border-border bg-surface p-4 pt-16 shadow-2xl">
             <nav className="flex flex-col gap-1">
               {NAV.map((item) => (
                 <NavLink key={item.href} href={item.href} label={item.label} onClick={() => setOpen(false)} />
               ))}
             </nav>
-            <Link href="/projects" className="btn-primary mt-6 w-full text-center" onClick={() => setOpen(false)}>
+            <div className="mt-4">
+              <ThemeToggle />
+            </div>
+            <Link href="/projects" className="btn-primary mt-4 w-full text-center" onClick={() => setOpen(false)}>
               Connect repository
             </Link>
           </aside>

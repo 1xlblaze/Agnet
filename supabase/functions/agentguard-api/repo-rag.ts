@@ -227,6 +227,22 @@ export function answerRepoQuestion(
     };
   }
 
+  // Repo overview / about
+  if (/what(?:'s| is) (this|the) repo about|tell me about (this|the) repo|describe (this|the) repo|what does this repo do/.test(q)) {
+    const baseline = (report.baseline as Record<string, unknown>)?.baseline as Record<string, unknown> | undefined;
+    const fileCount = baseline?.file_count ?? "—";
+    const languages = (baseline?.languages as string[])?.join(", ") || "unknown";
+    const services = (baseline?.services as string[])?.length ?? 0;
+    const topGaps = gaps.slice(0, 3).map((g) => g.check.replace(/_/g, " "));
+    const topPassed = passed.slice(0, 3).map((p) => p.check.replace(/_/g, " "));
+    return {
+      intent: "repo_about",
+      answer: `**${fullName}** is a GitHub repository scanned by AgentGuard.\n\n**Overview**\n- Files tracked: **${fileCount}**\n- Languages: **${languages}**\n- Services detected: **${services}**\n- Production confidence: **${confidence}/100**\n- Gaps found: **${gaps.length}**\n\n**Top strengths:** ${topPassed.length ? topPassed.join(", ") : "run a scan for details"}\n**Top gaps:** ${topGaps.length ? topGaps.join(", ") : "none — all checks passed"}\n\nAsk about a specific dimension (security, database, tests) for RAG-grounded detail.`,
+      gaps: gaps.slice(0, 3),
+      sources: [...topPassed, ...topGaps].slice(0, 5),
+    };
+  }
+
   // Strengths overview
   if (isStrengthsQuestion(q)) {
     const top = passed.slice(0, 6).map((p) => formatItem(p, false));

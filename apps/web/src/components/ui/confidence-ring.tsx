@@ -1,7 +1,7 @@
-export function confidenceColor(value: number) {
-  if (value >= 80) return "#34d399";
-  if (value >= 60) return "#fbbf24";
-  return "#f87171";
+export function confidenceColor(value: number): string {
+  if (value >= 80) return "rgb(var(--accent-secondary))";
+  if (value >= 60) return "rgb(var(--warn))";
+  return "rgb(var(--danger))";
 }
 
 export function ConfidenceRing({ value, size = "lg" }: { value: number; size?: "sm" | "lg" }) {
@@ -20,7 +20,7 @@ export function ConfidenceRing({ value, size = "lg" }: { value: number; size?: "
           cy={dim / 2}
           r={r}
           fill="none"
-          stroke="rgba(255,255,255,0.06)"
+          stroke="rgb(var(--border))"
           strokeWidth={stroke}
         />
         <circle
