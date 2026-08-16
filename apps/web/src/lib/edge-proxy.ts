@@ -1,4 +1,4 @@
-import { hasDatabase, hasSupabaseAdmin } from "@/lib/supabase";
+import { hasSupabaseAdmin } from "@/lib/supabase";
 
 const SUPABASE_URL = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL;
 const SERVICE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
@@ -20,5 +20,5 @@ export async function proxyEdge(path: string, init?: RequestInit) {
 }
 
 export function useEdgeApi() {
-  return !hasDatabase() && hasSupabaseAdmin();
+  return hasSupabaseAdmin();
 }
