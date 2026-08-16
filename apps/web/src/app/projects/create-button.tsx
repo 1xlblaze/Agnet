@@ -17,8 +17,7 @@ export function CreateProjectButton() {
           start(async () => {
             setErr("");
             try {
-              const api = process.env.NEXT_PUBLIC_API_URL || "";
-              const res = await fetch(`${api}/api/v1/projects/generate`, {
+              const res = await fetch("/api/v1/projects/generate", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ name: `svc-${Date.now().toString().slice(-4)}` }),
