@@ -119,8 +119,10 @@ func (p *Pipeline) AnalyzePR(ctx context.Context, analysisID, prID uuid.UUID) er
 	_ = p.Store.UpdateAnalysisStatus(ctx, analysisID, "RISK_ANALYSIS", "")
 	eng := risk.Analyze(analysisID, pr.Diff, g, br)
 
+	graphJSON, _ := json.Marshal(g)
+	repoContext := "AgentGuard policy: idempotency required for payment retries; LLM output is advisory; policy engine decides deploy."
 	// LLM advisory findings
-	llmRes, _ := p.LLM.Analyze(ctx, llm.AnalysisInput{PRDescription: pr.Title, Diff: pr.Diff, BlastRadius: br.Score})
+	llmRes, _ := p.LLM.Analyze(ctx, llm.AnalysisInput{PRDescription: pr.Title, Diff: pr.Diff, BlastRadius: br.Score, GraphJSON: string(graphJSON), RepoContext: repoContext})
 	for _, f := range llmRes.Findings {
 		ev, _ := json.Marshal(f.Evidence)
 		sev := strings.ToUpper(f.Severity)

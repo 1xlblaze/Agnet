@@ -1,4 +1,7 @@
 import { apiGet } from "@/lib/api";
+import { ConfidenceRing } from "@/components/ui/confidence-ring";
+import { PipelineTimeline } from "@/components/ui/pipeline-timeline";
+import { StatusBadge } from "@/components/ui/status-badge";
 
 type Dashboard = {
   production_confidence: number;
@@ -7,19 +10,19 @@ type Dashboard = {
   performance: number;
   architecture: number;
   database: number;
-  latest_pr?: { title: string; github_pr_number: number; author: string };
+  latest_pr?: { id: string; title: string; github_pr_number: number; author: string };
   latest_risk?: { overall_risk: number; blast_radius: number; decision: string };
 };
 
-function Score({ label, value }: { label: string; value: number }) {
+function ScoreBar({ label, value }: { label: string; value: number }) {
   return (
-    <div className="border-b border-foam/10 py-3">
-      <div className="flex items-baseline justify-between">
-        <span className="text-sand/80">{label}</span>
-        <span className="font-display text-2xl text-foam">{value}</span>
+    <div className="space-y-2">
+      <div className="flex items-baseline justify-between text-sm">
+        <span className="text-body">{label}</span>
+        <span className="font-semibold text-ink">{value}</span>
       </div>
-      <div className="mt-2 h-1.5 overflow-hidden rounded bg-foam/10">
-        <div className="h-full bg-moss transition-all duration-700" style={{ width: `${Math.min(100, value)}%` }} />
+      <div className="h-1.5 overflow-hidden rounded-full bg-hairline-soft">
+        <div className="h-full rounded-full bg-primary transition-all duration-700" style={{ width: `${Math.min(100, value)}%` }} />
       </div>
     </div>
   );
@@ -35,48 +38,54 @@ export default async function DashboardPage() {
   }
 
   return (
-    <section className="grid gap-10 md:grid-cols-[1.2fr_0.8fr]">
-      <div className="animate-[fadeIn_0.8s_ease]">
-        <p className="text-sm uppercase tracking-[0.2em] text-sand/70">Production Confidence</p>
-        <p className="font-display mt-2 text-7xl font-bold text-foam md:text-8xl">
-          {data ? data.production_confidence : "—"}
-          <span className="text-3xl text-sand/70"> / 100</span>
-        </p>
-        {error ? <p className="mt-4 text-ember">{error}</p> : null}
-        <div className="mt-8 max-w-md">
-          <Score label="Security" value={data?.security ?? 0} />
-          <Score label="Reliability" value={data?.reliability ?? 0} />
-          <Score label="Performance" value={data?.performance ?? 0} />
-          <Score label="Architecture" value={data?.architecture ?? 0} />
-          <Score label="Database" value={data?.database ?? 0} />
-        </div>
-      </div>
-      <aside className="self-start border border-foam/15 bg-ink/40 p-6 backdrop-blur-sm">
-        <p className="text-sm uppercase tracking-[0.2em] text-sand/70">Latest PR</p>
-        {data?.latest_pr ? (
-          <div className="mt-4 space-y-3">
-            <p className="font-display text-2xl text-foam">#{data.latest_pr.github_pr_number}</p>
-            <p className="text-lg">{data.latest_pr.title}</p>
-            <p className="text-sm text-sand/80">Agent: {data.latest_pr.author}</p>
-            {data.latest_risk ? (
-              <div className="mt-6 space-y-2 border-t border-foam/10 pt-4 text-sm">
-                <p>
-                  Risk: <strong>{data.latest_risk.overall_risk} / 100</strong>
-                </p>
-                <p>
-                  Blast Radius: <strong>{data.latest_risk.blast_radius} / 100</strong>
-                </p>
-                <p className="font-display text-xl text-moss">{data.latest_risk.decision}</p>
-              </div>
-            ) : null}
+    <section className="animate-rise space-y-10">
+      <div className="grid gap-8 lg:grid-cols-[1fr_1.1fr]">
+        <div className="rounded-xl border border-hairline bg-surface-card p-8 shadow-card">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted">Production Confidence</p>
+          <div className="mt-6 flex flex-col items-start gap-8 sm:flex-row sm:items-center">
+            <ConfidenceRing value={data?.production_confidence ?? 0} />
+            <div className="w-full max-w-sm space-y-4">
+              <ScoreBar label="Security" value={data?.security ?? 0} />
+              <ScoreBar label="Reliability" value={data?.reliability ?? 0} />
+              <ScoreBar label="Performance" value={data?.performance ?? 0} />
+              <ScoreBar label="Architecture" value={data?.architecture ?? 0} />
+              <ScoreBar label="Database" value={data?.database ?? 0} />
+            </div>
           </div>
-        ) : (
-          <p className="mt-4 text-sand/80">
-            No pull requests analyzed yet. Run <code>make e2e</code>.
-          </p>
-        )}
-      </aside>
-      <style>{`@keyframes fadeIn { from { opacity: 0; transform: translateY(8px);} to { opacity: 1; transform: none; } }`}</style>
+          {error ? <p className="mt-4 text-sm text-danger">{error}</p> : null}
+        </div>
+
+        <aside className="rounded-xl border border-hairline bg-surface-card p-8 shadow-card">
+          <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted">Latest Pull Request</p>
+          {data?.latest_pr ? (
+            <div className="mt-5 space-y-4">
+              <a href={`/pull-requests/${data.latest_pr.id}`} className="font-display text-2xl tracking-[-0.02em] text-ink hover:text-primary">
+                #{data.latest_pr.github_pr_number} {data.latest_pr.title}
+              </a>
+              <p className="text-sm text-body">Agent: {data.latest_pr.author}</p>
+              {data.latest_risk ? (
+                <div className="space-y-3 border-t border-hairline-soft pt-5">
+                  <div className="flex flex-wrap gap-2">
+                    <StatusBadge label={`Risk ${data.latest_risk.overall_risk}`} variant="MEDIUM" />
+                    <StatusBadge label={`Blast ${data.latest_risk.blast_radius}`} variant="LOW" />
+                    <StatusBadge
+                      label={data.latest_risk.decision}
+                      variant={data.latest_risk.decision as "ALLOW" | "BLOCK" | "HUMAN_APPROVAL"}
+                    />
+                  </div>
+                </div>
+              ) : null}
+            </div>
+          ) : (
+            <p className="mt-4 text-sm text-body">No pull requests analyzed yet. Run the e2e flow to seed demo data.</p>
+          )}
+        </aside>
+      </div>
+
+      <div className="rounded-xl border border-hairline bg-surface-card p-6 shadow-card">
+        <p className="mb-4 text-[11px] font-semibold uppercase tracking-[0.12em] text-muted">Verification Pipeline</p>
+        <PipelineTimeline activeIndex={data?.latest_risk ? 5 : 2} />
+      </div>
     </section>
   );
 }

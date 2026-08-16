@@ -10,6 +10,8 @@ import {
   verify,
   type Finding,
 } from "@/lib/agentguard/engine";
+import { analyzeWithLlm } from "@/lib/agentguard/llm";
+import { retrieveContext } from "@/lib/agentguard/rag";
 
 export async function ensureOrg() {
   const sql = getSql();
@@ -98,11 +100,21 @@ export async function analyzePullRequest(prId: string) {
 
   const graph = buildGraph(repo.name, pr.diff || "");
   const blast = blastRadius(graph);
-  let findings = detectFindings(pr.diff || "");
-  // advisory LLM duplicate
-  if (findings.some((f) => f.title === "Duplicate payment risk")) {
-    findings = [...findings, { ...findings.find((f) => f.title === "Duplicate payment risk")! }];
+  const staticFindings = detectFindings(pr.diff || "");
+  const ragHits = retrieveContext(`${pr.title}\n${pr.diff || ""}`, 5);
+  const llm = await analyzeWithLlm({
+    prTitle: pr.title,
+    diff: pr.diff || "",
+    blastRadius: blast.score,
+    graphJson: JSON.stringify(graph),
+    staticFindings,
+  });
+  const merged = new Map<string, Finding>();
+  for (const f of [...staticFindings, ...llm.findings]) {
+    const key = `${f.severity}:${f.title}`;
+    if (!merged.has(key)) merged.set(key, { ...f, evidence: [...(Array.isArray(f.evidence) ? f.evidence : [f.evidence]), `rag:${ragHits.length}`, `llm:${llm.provider}`] });
   }
+  let findings = [...merged.values()];
 
   let remediations = false;
   let agentRun = null as null | Record<string, unknown>;

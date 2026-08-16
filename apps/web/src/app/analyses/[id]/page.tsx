@@ -1,33 +1,48 @@
 import { apiGet } from "@/lib/api";
+import { FindingCard } from "@/components/findings/finding-card";
+import { PipelineTimeline } from "@/components/ui/pipeline-timeline";
+import { StatusBadge } from "@/components/ui/status-badge";
 
 export default async function AnalysisDetail({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const data = await apiGet<any>(`/api/v1/analyses/${id}`);
   const findings = data.findings || [];
+  const decision = data.risk?.decision as "ALLOW" | "BLOCK" | "HUMAN_APPROVAL" | undefined;
+
   return (
-    <section className="space-y-8">
-      <div>
-        <h1 className="font-display text-4xl text-foam">Analysis</h1>
-        <p className="mt-2 text-sand/80">{data.analysis?.status}</p>
+    <section className="animate-rise space-y-8">
+      <div className="flex flex-col gap-4 md:flex-row md:items-end md:justify-between">
+        <div>
+          <p className="text-[11px] font-semibold uppercase tracking-[0.12em] text-muted">Analysis</p>
+          <h1 className="font-display text-4xl tracking-[-0.03em] text-ink">{data.analysis?.status}</h1>
+        </div>
+        {decision ? <StatusBadge label={decision} variant={decision} className="px-3 py-1 text-xs" /> : null}
       </div>
+
+      <PipelineTimeline activeIndex={data.analysis?.status === "COMPLETED" ? 5 : 3} />
+
       {data.risk ? (
-        <div className="grid gap-3 md:grid-cols-3">
-          <div className="border border-foam/10 p-4"><p className="text-xs text-sand/70">Risk</p><p className="font-display text-3xl">{data.risk.overall_risk}</p></div>
-          <div className="border border-foam/10 p-4"><p className="text-xs text-sand/70">Blast Radius</p><p className="font-display text-3xl">{data.risk.blast_radius}</p></div>
-          <div className="border border-foam/10 p-4"><p className="text-xs text-sand/70">Decision</p><p className="font-display text-3xl">{data.risk.decision}</p></div>
+        <div className="grid gap-4 md:grid-cols-3">
+          {[
+            { label: "Overall Risk", value: data.risk.overall_risk },
+            { label: "Blast Radius", value: data.risk.blast_radius },
+            { label: "Decision", value: data.risk.decision, text: true },
+          ].map((m) => (
+            <div key={m.label} className="rounded-lg border border-hairline bg-surface-card p-5 shadow-card">
+              <p className="text-xs font-semibold uppercase tracking-[0.1em] text-muted">{m.label}</p>
+              <p className={`mt-2 font-display text-3xl tracking-[-0.02em] text-ink ${m.text ? "text-xl" : ""}`}>{m.value}</p>
+            </div>
+          ))}
         </div>
       ) : null}
+
       <div className="space-y-4">
-        {findings.map((f: any) => (
-          <article key={f.id} className="border border-foam/10 bg-ink/30 p-4">
-            <p className="text-xs uppercase tracking-wider text-ember">{f.severity} · {f.category}</p>
-            <h2 className="font-display mt-1 text-2xl">{f.title}</h2>
-            <p className="mt-2 text-sm text-sand/90">{f.description}</p>
-            {f.file ? <p className="mt-2 font-mono text-xs">{f.file}:{f.line}</p> : null}
-            <p className="mt-3 text-sm"><strong>Recommendation:</strong> {f.recommendation}</p>
-            <p className="mt-1 text-xs text-sand/70">Confidence {(f.confidence * 100).toFixed(0)}% · {f.status}</p>
-          </article>
-        ))}
+        <h2 className="font-display text-2xl text-ink">Findings</h2>
+        {findings.length === 0 ? (
+          <p className="text-sm text-body">No findings recorded.</p>
+        ) : (
+          findings.map((f: any) => <FindingCard key={f.id} finding={f} />)
+        )}
       </div>
     </section>
   );
