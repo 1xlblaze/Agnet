@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { apiGet } from "@/lib/api";
 
+export const dynamic = "force-dynamic";
+
 type RepoReport = {
   id: string;
   full_name: string;
