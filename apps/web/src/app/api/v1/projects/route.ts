@@ -4,6 +4,8 @@ import { proxyEdge, useEdgeApi } from "@/lib/edge-proxy";
 import { getSql } from "@/lib/supabase";
 import { randomUUID } from "crypto";
 
+export const maxDuration = 60;
+
 export async function GET() {
   try {
     if (useEdgeApi()) return proxyEdge("projects");

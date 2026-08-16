@@ -51,7 +51,11 @@ export function ConnectGitHubForm() {
               const repoId = data.repository?.id;
               if (!repoId) throw new Error("repository not created");
 
-              setMsg("Connected — running baseline scan…");
+              setMsg(
+                data.existing
+                  ? "Already connected — re-running baseline scan…"
+                  : "Connected — running baseline scan…",
+              );
               const analyzeRes = await fetch(`/api/v1/repositories/${repoId}/analyze`, { method: "POST" });
               if (!analyzeRes.ok) {
                 const body = await analyzeRes.json().catch(() => ({}));
@@ -60,6 +64,7 @@ export function ConnectGitHubForm() {
               setGithub("");
               setMsg(`Done! Opening ${ref}…`);
               router.push(`/projects/${data.project?.id || data.project_id}`);
+              router.refresh();
             } catch (e) {
               setErr(e instanceof Error ? e.message : "failed");
             }
