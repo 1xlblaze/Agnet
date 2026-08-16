@@ -19,6 +19,22 @@ function fail(code: string, message: string, status = 500) {
   return json({ error: { code, message } }, status);
 }
 
+function formatError(e: unknown): string {
+  if (e instanceof Error) return e.message;
+  if (e && typeof e === "object") {
+    const o = e as Record<string, unknown>;
+    if (typeof o.message === "string" && o.message) return o.message;
+    if (typeof o.details === "string" && o.details) return o.details;
+    if (typeof o.hint === "string" && o.hint) return o.hint;
+    try {
+      return JSON.stringify(e);
+    } catch {
+      /* fall through */
+    }
+  }
+  return String(e);
+}
+
 function admin() {
   const url = Deno.env.get("SUPABASE_URL");
   const key = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
@@ -230,16 +246,39 @@ async function ready() {
   return { status: "ready" };
 }
 
+async function findConnectedRepo(sb: SupabaseClient, owner: string, name: string, githubId?: number) {
+  if (githubId) {
+    const { data } = await sb.from("repositories").select("*").eq("github_repository_id", githubId).maybeSingle();
+    if (data) return data;
+  }
+  const { data } = await sb
+    .from("repositories")
+    .select("*")
+    .eq("owner", owner)
+    .eq("name", name)
+    .order("created_at", { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  return data;
+}
+
 async function createProject(body: Record<string, unknown>) {
   const sb = admin();
   const gh = parseGitHubRef(body);
 
   if (gh) {
+    const ghData = await fetchGitHubRepo(gh.owner, gh.name);
+    const existing = await findConnectedRepo(sb, gh.owner, gh.name, ghData.repo.id);
+    if (existing) {
+      const { data: project, error } = await sb.from("projects").select("*").eq("id", existing.project_id).single();
+      if (error) throw error;
+      return { project, repository: existing, connected: true, existing: true };
+    }
+
     const orgId = (body.organization_id as string) || (await ensureOrg(sb));
     const projectId = crypto.randomUUID();
     const repoId = crypto.randomUUID();
 
-    const ghData = await fetchGitHubRepo(gh.owner, gh.name);
     const { error: projErr } = await sb.from("projects").insert({
       id: projectId,
       organization_id: orgId,
@@ -263,7 +302,7 @@ async function createProject(body: Record<string, unknown>) {
 
     const project = (await sb.from("projects").select("*").eq("id", projectId).single()).data;
     const repository = (await sb.from("repositories").select("*").eq("id", repoId).single()).data;
-    return { project, repository, connected: true };
+    return { project, repository, connected: true, existing: false };
   }
 
   if (!body.name) throw new Error("name or github (owner/repo) required");
@@ -586,7 +625,7 @@ Deno.serve(async (req) => {
 
     return fail("not_found", `Unknown route: ${method} ${path}`, 404);
   } catch (e) {
-    const message = e instanceof Error ? e.message : String(e);
+    const message = formatError(e);
     return fail("internal_error", message, 500);
   }
 });
