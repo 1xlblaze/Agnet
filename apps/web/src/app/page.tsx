@@ -33,7 +33,7 @@ export default async function DashboardPage() {
         <p className="text-[11px] uppercase tracking-[0.2em] text-sand/65">Dashboard</p>
         <h1 className="font-display mt-2 text-3xl text-foam sm:text-4xl">Per-repository reports</h1>
         <p className="mt-2 max-w-xl text-sm text-sand/80">
-          Each connected repo keeps its own AgentGuard report document in Supabase. Scores belong to that repo — not a global mix.
+          Connect repos, run baseline scans, and use the RAG assistant to ask where each repository lacks.
         </p>
         {error ? <p className="mt-3 text-ember">API /api/v1/dashboard failed: {error}</p> : null}
       </section>
@@ -51,6 +51,7 @@ export default async function DashboardPage() {
           {repos.map((repo) => {
             const scores = repo.report?.scores ?? {};
             const confidence = repo.production_confidence || repo.report?.production_confidence || 0;
+            const gapCount = repo.gap_count ?? repo.report?.gaps?.length ?? 0;
             return (
               <li key={repo.id} className="border border-foam/10 bg-ink/35 p-4 sm:p-6">
                 <div className="flex flex-wrap items-start justify-between gap-3">
@@ -61,10 +62,23 @@ export default async function DashboardPage() {
                     {repo.github_url ? (
                       <p className="mt-1 text-xs text-sand/60">{repo.github_url}</p>
                     ) : null}
+                    {gapCount > 0 ? (
+                      <p className="mt-2 text-xs text-ember">{gapCount} gap{gapCount === 1 ? "" : "s"} found in baseline</p>
+                    ) : (
+                      <p className="mt-2 text-xs text-moss">All baseline checks passed</p>
+                    )}
                   </div>
-                  <span className="inline-flex border border-moss/40 bg-moss/15 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wider text-foam">
-                    {repo.status.replace(/_/g, " ")}
-                  </span>
+                  <div className="flex flex-col items-end gap-2">
+                    <span className="inline-flex border border-moss/40 bg-moss/15 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wider text-foam">
+                      {repo.status.replace(/_/g, " ")}
+                    </span>
+                    <Link
+                      href={`/projects/${repo.project_id}`}
+                      className="text-xs text-moss hover:underline"
+                    >
+                      View report &amp; chat →
+                    </Link>
+                  </div>
                 </div>
                 <div className="mt-6 grid gap-6 md:grid-cols-[180px_1fr]">
                   <div>
@@ -93,10 +107,9 @@ export default async function DashboardPage() {
           </div>
         </div>
         <p className="text-sm leading-relaxed text-sand/80">
-          Reports live in Supabase table <code className="text-foam">agentguard_reports</code> as JSON documents (
-          <code className="text-foam">baseline</code>, <code className="text-foam">pr</code>,{" "}
-          <code className="text-foam">summary</code>). Re-running baseline or PR analysis upserts the same key and bumps{" "}
-          <code className="text-foam">version</code>.
+          Each repo gets a baseline report with dimension scores and evidence. Failed checks become <strong>gaps</strong> you
+          can explore on the project page. The RAG assistant retrieves relevant gap evidence to answer questions like
+          &ldquo;where does this repo lack?&rdquo; or &ldquo;what security issues exist?&rdquo;
         </p>
       </section>
     </div>
