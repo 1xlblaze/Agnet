@@ -1,18 +1,38 @@
+import { PageHeader } from "@/components/ui/page-header";
+import { StatCard } from "@/components/ui/stat-card";
 import { apiGet } from "@/lib/api";
 
 export default async function CertificatePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const c = await apiGet<any>(`/api/v1/certificates/${id}`);
+
   return (
-    <section className="border border-foam/20 bg-ink/50 p-8">
-      <p className="text-xs uppercase tracking-[0.25em] text-sand/70">AgentGuard Production Certificate</p>
-      <h1 className="font-display mt-4 text-4xl text-foam">{c.decision}</h1>
-      <div className="mt-8 grid gap-4 md:grid-cols-3">
-        <div><p className="text-xs text-sand/70">Risk</p><p className="font-display text-3xl">{c.risk_score}</p></div>
-        <div><p className="text-xs text-sand/70">Blast Radius</p><p className="font-display text-3xl">{c.blast_radius}</p></div>
-        <div><p className="text-xs text-sand/70">Commit</p><p className="font-mono text-sm">{c.commit_sha}</p></div>
+    <div className="space-y-8">
+      <PageHeader
+        label="Production certificate"
+        title={c.decision}
+        description="AgentGuard production readiness certificate"
+      />
+
+      <div className="glass-card border-accent/20 bg-accent/5 p-8">
+        <div className="grid gap-4 sm:grid-cols-3">
+          <StatCard label="Risk score" value={c.risk_score} />
+          <StatCard label="Blast radius" value={c.blast_radius} />
+          <div className="glass-card p-5">
+            <p className="section-label">Commit</p>
+            <p className="mt-2 font-mono text-sm text-text-primary">{c.commit_sha}</p>
+          </div>
+        </div>
       </div>
-      <pre className="mt-8 overflow-auto text-xs text-sand/80">{JSON.stringify(c.evidence, null, 2)}</pre>
-    </section>
+
+      <div className="glass-card overflow-hidden">
+        <div className="border-b border-border px-5 py-3">
+          <p className="section-label">Evidence</p>
+        </div>
+        <pre className="scrollbar-thin max-h-[32rem] overflow-auto p-5 text-xs text-text-secondary">
+          {JSON.stringify(c.evidence, null, 2)}
+        </pre>
+      </div>
+    </div>
   );
 }

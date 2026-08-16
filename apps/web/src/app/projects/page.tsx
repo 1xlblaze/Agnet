@@ -1,4 +1,8 @@
 import Link from "next/link";
+import { ConfidenceRing } from "@/components/ui/confidence-ring";
+import { EmptyState } from "@/components/ui/empty-state";
+import { PageHeader } from "@/components/ui/page-header";
+import { StatusBadge } from "@/components/ui/status-badge";
 import { apiGet } from "@/lib/api";
 import { AnalyzeButton } from "./analyze-button";
 import { ConnectGitHubForm } from "./connect-github-form";
@@ -21,12 +25,6 @@ type Project = {
   } | null;
 };
 
-function confidenceColor(n: number) {
-  if (n >= 80) return "text-moss";
-  if (n >= 60) return "text-ember";
-  return "text-ember";
-}
-
 export default async function ProjectsPage() {
   let items: Project[] = [];
   let error = "";
@@ -38,62 +36,66 @@ export default async function ProjectsPage() {
   }
 
   return (
-    <section className="animate-rise space-y-8">
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
-        <div>
-          <h1 className="font-display text-3xl text-foam sm:text-4xl">Projects</h1>
-          <p className="mt-2 text-sand/80">Connect repositories, run baseline scans, and chat about gaps.</p>
-        </div>
-        <CreateProjectButton />
-      </div>
+    <div className="space-y-8">
+      <PageHeader
+        label="Projects"
+        title="Your repositories"
+        description="Connect GitHub repos, run baseline scans, and explore gaps with the repository assistant."
+        action={<CreateProjectButton />}
+      />
 
       <ConnectGitHubForm />
 
-      {error ? <p className="text-ember">{error}</p> : null}
+      {error ? (
+        <div className="glass-card border-danger/30 bg-danger/5 p-4 text-sm text-danger">{error}</div>
+      ) : null}
 
       {items.length === 0 ? (
-        <div className="card p-8 text-center text-sand/70">No projects yet. Connect a GitHub repo above.</div>
+        <EmptyState
+          title="No projects yet"
+          description="Enter a GitHub owner/repo above to connect and automatically run a baseline scan."
+        />
       ) : (
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
           {items.map((p) => {
             const repo = p.repository;
             const fullName = repo ? `${repo.owner}/${repo.name}` : p.name;
             const confidence = p.report?.production_confidence;
             const gapCount = p.report?.gaps?.length ?? 0;
             return (
-              <article key={p.id} className="card flex flex-col p-5 transition hover:border-moss/30">
-                <div className="flex-1">
-                  <Link href={`/projects/${p.id}`} className="font-display text-xl text-foam hover:text-moss">
-                    {fullName}
-                  </Link>
-                  <p className="mt-1 line-clamp-2 text-sm text-sand/75">{p.description || "—"}</p>
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    <span className="rounded-full bg-ink/50 px-2.5 py-0.5 text-[10px] uppercase tracking-wider text-sand/60">
-                      {p.status.replace(/_/g, " ")}
-                    </span>
-                    {typeof confidence === "number" ? (
-                      <span className={`text-xs font-semibold ${confidenceColor(confidence)}`}>
-                        {confidence}/100
-                      </span>
-                    ) : null}
-                    {gapCount > 0 ? (
-                      <span className="text-xs text-ember">{gapCount} gaps</span>
-                    ) : typeof confidence === "number" ? (
-                      <span className="text-xs text-moss">All clear</span>
-                    ) : null}
+              <article key={p.id} className="glass-card-hover flex flex-col p-5">
+                <div className="flex items-start justify-between gap-3">
+                  <div className="min-w-0 flex-1">
+                    <Link href={`/projects/${p.id}`} className="font-display text-lg text-text-primary hover:text-accent">
+                      {fullName}
+                    </Link>
+                    <p className="mt-1 line-clamp-2 text-sm text-text-secondary">{p.description || "No description"}</p>
                   </div>
+                  {typeof confidence === "number" ? <ConfidenceRing value={confidence} size="sm" /> : null}
                 </div>
-                <div className="mt-4 flex flex-wrap gap-2 border-t border-foam/10 pt-4">
+
+                <div className="mt-4 flex flex-wrap items-center gap-2">
+                  <StatusBadge status={p.status} />
+                  {gapCount > 0 ? (
+                    <span className="badge-danger">{gapCount} gaps</span>
+                  ) : typeof confidence === "number" ? (
+                    <span className="badge-success">All clear</span>
+                  ) : (
+                    <span className="badge-neutral">Not scanned</span>
+                  )}
+                </div>
+
+                <div className="mt-auto flex flex-wrap gap-2 border-t border-border pt-4">
                   <Link href={`/projects/${p.id}`} className="btn-secondary text-xs">
                     Report &amp; chat
                   </Link>
-                  {repo ? <AnalyzeButton repositoryId={repo.id} label="Scan" /> : null}
+                  {repo ? <AnalyzeButton repositoryId={repo.id} label="Rescan" /> : null}
                 </div>
               </article>
             );
           })}
         </div>
       )}
-    </section>
+    </div>
   );
 }

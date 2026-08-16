@@ -1,21 +1,13 @@
 import Link from "next/link";
+import { ConfidenceRing } from "@/components/ui/confidence-ring";
+import { EmptyState } from "@/components/ui/empty-state";
+import { PageHeader } from "@/components/ui/page-header";
+import { ScoreGrid } from "@/components/ui/score-bar";
+import { StatCard } from "@/components/ui/stat-card";
+import { StatusBadge } from "@/components/ui/status-badge";
 import { loadDashboard, type RepoReport } from "@/lib/agentguard/dashboard";
 
 export const dynamic = "force-dynamic";
-
-function Score({ label, value }: { label: string; value: number }) {
-  return (
-    <div className="border-b border-foam/10 py-2.5">
-      <div className="flex items-baseline justify-between gap-3">
-        <span className="text-sm text-sand/80">{label}</span>
-        <span className="font-display text-xl text-foam">{value}</span>
-      </div>
-      <div className="mt-2 h-1.5 overflow-hidden bg-foam/10">
-        <div className="h-full bg-moss transition-all duration-700" style={{ width: `${Math.min(100, value)}%` }} />
-      </div>
-    </div>
-  );
-}
 
 export default async function DashboardPage() {
   let repos: RepoReport[] = [];
@@ -27,90 +19,120 @@ export default async function DashboardPage() {
     error = e instanceof Error ? e.message : "failed to load";
   }
 
+  const totalGaps = repos.reduce((n, r) => n + (r.gap_count ?? r.report?.gaps?.length ?? 0), 0);
+  const avgConfidence =
+    repos.length > 0
+      ? Math.round(
+          repos.reduce(
+            (n, r) => n + (r.production_confidence || r.report?.production_confidence || 0),
+            0,
+          ) / repos.length,
+        )
+      : 0;
+
   return (
-    <div className="space-y-8 sm:space-y-10">
-      <section className="animate-[fadeIn_0.5s_ease]">
-        <p className="text-[11px] uppercase tracking-[0.2em] text-sand/65">Dashboard</p>
-        <h1 className="font-display mt-2 text-3xl text-foam sm:text-4xl">Per-repository reports</h1>
-        <p className="mt-2 max-w-xl text-sm text-sand/80">
-          Connect repos, run baseline scans, and use the RAG assistant to ask where each repository lacks.
-        </p>
-        {error ? <p className="mt-3 text-ember">API /api/v1/dashboard failed: {error}</p> : null}
-      </section>
+    <div className="space-y-10">
+      <PageHeader
+        label="Dashboard"
+        title="Repository health overview"
+        description="Monitor baseline scores, track gaps across connected repos, and jump into reports or the assistant."
+      />
+
+      {error ? (
+        <div className="glass-card border-danger/30 bg-danger/5 p-4 text-sm text-danger">
+          API /api/v1/dashboard failed: {error}
+        </div>
+      ) : null}
+
+      {repos.length > 0 ? (
+        <div className="grid gap-4 sm:grid-cols-3">
+          <StatCard label="Repositories" value={repos.length} hint="Connected and scanned" />
+          <StatCard label="Avg confidence" value={avgConfidence} hint="Across all repos" accent />
+          <StatCard
+            label="Open gaps"
+            value={totalGaps}
+            hint={totalGaps === 0 ? "All checks passing" : "Needs attention"}
+          />
+        </div>
+      ) : null}
 
       {repos.length === 0 ? (
-        <p className="text-sm text-sand/70">
-          No repositories yet.{" "}
-          <Link className="text-moss underline" href="/projects">
-            Connect a GitHub repo
-          </Link>
-          .
-        </p>
+        <EmptyState
+          title="No repositories yet"
+          description="Connect a GitHub repository to run a baseline scan and unlock scores, gap analysis, and the repository assistant."
+          actionHref="/projects"
+          actionLabel="Connect a repository"
+        />
       ) : (
-        <ul className="grid gap-4 sm:grid-cols-2">
-          {repos.map((repo) => {
-            const scores = repo.report?.scores ?? {};
-            const confidence = repo.production_confidence || repo.report?.production_confidence || 0;
-            const gapCount = repo.gap_count ?? repo.report?.gaps?.length ?? 0;
-            return (
-              <li key={repo.id} className="card p-5 transition hover:border-moss/30">
-                <div className="flex flex-wrap items-start justify-between gap-3">
-                  <div>
-                    <Link href={`/projects/${repo.project_id}`} className="font-display text-2xl text-foam hover:underline">
-                      {repo.full_name}
-                    </Link>
-                    {repo.github_url ? (
-                      <p className="mt-1 text-xs text-sand/60">{repo.github_url}</p>
-                    ) : null}
-                    {gapCount > 0 ? (
-                      <p className="mt-2 text-xs text-ember">{gapCount} gap{gapCount === 1 ? "" : "s"} found in baseline</p>
-                    ) : (
-                      <p className="mt-2 text-xs text-moss">All baseline checks passed</p>
-                    )}
-                  </div>
-                  <div className="flex flex-col items-end gap-2">
-                    <span className="inline-flex border border-moss/40 bg-moss/15 px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wider text-foam">
-                      {repo.status.replace(/_/g, " ")}
-                    </span>
-                    <Link
-                      href={`/projects/${repo.project_id}`}
-                      className="text-xs text-moss hover:underline"
-                    >
-                      View report &amp; chat →
-                    </Link>
-                  </div>
-                </div>
-                <div className="mt-6 grid gap-6 md:grid-cols-[180px_1fr]">
-                  <div>
-                    <p className="text-[11px] uppercase tracking-[0.2em] text-sand/65">Production confidence</p>
-                    <p className="font-display mt-1 text-5xl text-foam">{confidence}</p>
-                  </div>
-                  <div className="max-w-md">
-                    <Score label="Security" value={scores.security ?? 0} />
-                    <Score label="Reliability" value={scores.reliability ?? 0} />
-                    <Score label="Performance" value={scores.performance ?? 0} />
-                    <Score label="Architecture" value={scores.architecture ?? 0} />
-                    <Score label="Database" value={scores.database ?? 0} />
-                  </div>
-                </div>
-              </li>
-            );
-          })}
-        </ul>
+        <section className="space-y-4">
+          <div className="flex items-center justify-between">
+            <h2 className="font-display text-xl text-text-primary">Repositories</h2>
+            <Link href="/projects" className="text-sm text-accent hover:underline">
+              View all →
+            </Link>
+          </div>
+          <ul className="grid gap-4 lg:grid-cols-2">
+            {repos.map((repo) => {
+              const scores = repo.report?.scores ?? {};
+              const confidence = repo.production_confidence || repo.report?.production_confidence || 0;
+              const gapCount = repo.gap_count ?? repo.report?.gaps?.length ?? 0;
+              return (
+                <li key={repo.id}>
+                  <Link href={`/projects/${repo.project_id}`} className="glass-card-hover block p-6">
+                    <div className="flex items-start justify-between gap-4">
+                      <div className="min-w-0 flex-1">
+                        <h3 className="truncate font-display text-xl text-text-primary">{repo.full_name}</h3>
+                        {repo.github_url ? (
+                          <p className="mt-1 truncate text-xs text-text-muted">{repo.github_url}</p>
+                        ) : null}
+                        <div className="mt-3 flex flex-wrap items-center gap-2">
+                          <StatusBadge status={repo.status} />
+                          {gapCount > 0 ? (
+                            <span className="badge-danger">{gapCount} gap{gapCount === 1 ? "" : "s"}</span>
+                          ) : (
+                            <span className="badge-success">All clear</span>
+                          )}
+                        </div>
+                      </div>
+                      <ConfidenceRing value={confidence} size="sm" />
+                    </div>
+                    <div className="mt-6 border-t border-border pt-5">
+                      <ScoreGrid scores={scores} />
+                    </div>
+                  </Link>
+                </li>
+              );
+            })}
+          </ul>
+        </section>
       )}
 
-      <section className="animate-[fadeIn_0.55s_ease]">
-        <div className="mb-4 flex flex-col gap-3 sm:mb-5 sm:flex-row sm:items-end sm:justify-between">
+      <section className="glass-card p-6 sm:p-8">
+        <p className="section-label">How it works</p>
+        <h2 className="mt-2 font-display text-2xl text-text-primary">Baseline reports &amp; RAG assistant</h2>
+        <div className="mt-6 grid gap-6 sm:grid-cols-3">
           <div>
-            <p className="text-[11px] uppercase tracking-[0.2em] text-sand/65">Storage</p>
-            <h2 className="font-display mt-1 text-2xl text-foam sm:text-3xl">How reports work</h2>
+            <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-accent/10 text-accent">1</div>
+            <h3 className="font-medium text-text-primary">Connect &amp; scan</h3>
+            <p className="mt-1 text-sm text-text-secondary">
+              Link a public GitHub repo. AgentGuard scans the tree and scores five production dimensions.
+            </p>
+          </div>
+          <div>
+            <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-accent/10 text-accent">2</div>
+            <h3 className="font-medium text-text-primary">Review gaps</h3>
+            <p className="mt-1 text-sm text-text-secondary">
+              Failed checks become actionable gaps grouped by security, reliability, performance, and more.
+            </p>
+          </div>
+          <div>
+            <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-accent/10 text-accent">3</div>
+            <h3 className="font-medium text-text-primary">Ask the assistant</h3>
+            <p className="mt-1 text-sm text-text-secondary">
+              Chat retrieves evidence from your baseline to answer targeted questions — not generic summaries.
+            </p>
           </div>
         </div>
-        <p className="text-sm leading-relaxed text-sand/80">
-          Each repo gets a baseline report with dimension scores and evidence. Failed checks become <strong>gaps</strong> you
-          can explore on the project page. The RAG assistant retrieves relevant gap evidence to answer questions like
-          &ldquo;where does this repo lack?&rdquo; or &ldquo;what security issues exist?&rdquo;
-        </p>
       </section>
     </div>
   );

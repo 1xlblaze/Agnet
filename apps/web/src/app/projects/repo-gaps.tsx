@@ -8,20 +8,25 @@ const DIM_LABELS: Record<string, string> = {
   database: "Database",
 };
 
-const DIM_COLORS: Record<string, string> = {
-  security: "border-ember/30 bg-ember/5",
-  reliability: "border-sand/30 bg-sand/5",
-  performance: "border-moss/30 bg-moss/5",
-  architecture: "border-foam/20 bg-foam/5",
-  database: "border-foam/15 bg-ink/30",
+const DIM_ACCENTS: Record<string, string> = {
+  security: "border-danger/25 bg-danger/5",
+  reliability: "border-warn/25 bg-warn/5",
+  performance: "border-accent/25 bg-accent/5",
+  architecture: "border-border bg-surface-raised/50",
+  database: "border-border bg-surface-raised/50",
 };
 
 export function RepoGaps({ gaps, confidence }: { gaps: GapItem[]; confidence: number }) {
   if (gaps.length === 0) {
     return (
-      <div className="card border-moss/30 bg-moss/10 p-5">
-        <p className="font-medium text-moss">All baseline checks passed</p>
-        <p className="mt-1 text-sm text-sand/75">Production confidence: {confidence}/100</p>
+      <div className="glass-card border-accent/25 bg-accent/5 p-6">
+        <div className="flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-accent/15 text-accent">✓</div>
+          <div>
+            <p className="font-medium text-accent">All baseline checks passed</p>
+            <p className="mt-0.5 text-sm text-text-secondary">Production confidence: {confidence}/100</p>
+          </div>
+        </div>
       </div>
     );
   }
@@ -35,29 +40,31 @@ export function RepoGaps({ gaps, confidence }: { gaps: GapItem[]; confidence: nu
 
   return (
     <div className="space-y-4">
-      <div className="flex flex-wrap items-center gap-3 text-sm">
-        <span className="rounded-full bg-ember/20 px-3 py-1 font-medium text-ember">
-          {gaps.length} gap{gaps.length === 1 ? "" : "s"}
-        </span>
-        <span className="text-sand/70">
-          Confidence: <span className="font-semibold text-foam">{confidence}/100</span>
+      <div className="flex flex-wrap items-center gap-3">
+        <span className="badge-danger">{gaps.length} gap{gaps.length === 1 ? "" : "s"}</span>
+        <span className="text-sm text-text-secondary">
+          Confidence: <span className="font-semibold text-text-primary">{confidence}/100</span>
         </span>
       </div>
       {[...byDim.entries()].map(([dim, items]) => (
-        <div key={dim} className={`card overflow-hidden ${DIM_COLORS[dim] || ""}`}>
-          <p className="border-b border-foam/10 px-4 py-2.5 text-xs font-semibold uppercase tracking-wider text-sand/70">
+        <div key={dim} className={`glass-card overflow-hidden ${DIM_ACCENTS[dim] || ""}`}>
+          <p className="border-b border-border px-4 py-3 text-xs font-semibold uppercase tracking-wider text-text-muted">
             {DIM_LABELS[dim] || dim}
           </p>
-          <ul className="divide-y divide-foam/5">
+          <ul className="divide-y divide-border">
             {items.map((g) => (
-              <li key={g.check} className="px-4 py-3">
-                <div className="flex items-start gap-2">
-                  <span className="mt-0.5 text-ember">✗</span>
+              <li key={g.check} className="px-4 py-3.5">
+                <div className="flex items-start gap-3">
+                  <span className="mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-danger/15 text-xs text-danger">
+                    ✗
+                  </span>
                   <div>
-                    <p className="text-sm font-medium text-foam">{g.check.replace(/_/g, " ")}</p>
-                    <p className="mt-1 text-sm text-sand/75">{g.detail}</p>
+                    <p className="text-sm font-medium text-text-primary">{g.check.replace(/_/g, " ")}</p>
+                    <p className="mt-1 text-sm text-text-secondary">{g.detail}</p>
                     {g.recommendation ? (
-                      <p className="mt-2 text-xs text-moss/90">→ {g.recommendation}</p>
+                      <p className="mt-2 rounded-lg bg-accent/5 px-3 py-2 text-xs text-accent">
+                        → {g.recommendation}
+                      </p>
                     ) : null}
                   </div>
                 </div>

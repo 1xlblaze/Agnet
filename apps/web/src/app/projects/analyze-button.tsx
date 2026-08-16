@@ -13,6 +13,7 @@ export function AnalyzeButton({ repositoryId, label = "Run baseline scan" }: { r
       <button
         className="btn-secondary text-xs"
         disabled={pending}
+        type="button"
         onClick={() => {
           start(async () => {
             setErr("");
