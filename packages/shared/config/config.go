@@ -21,6 +21,7 @@ type Config struct {
 	GitHubPrivateKey    string
 	GitHubWebhookSecret string
 	OpenAIAPIKey        string
+	CursorAPIKey        string
 
 	AWSRegion     string
 	AWSRoleARN    string
@@ -44,6 +45,7 @@ func Load(serviceName string) (*Config, error) {
 		GitHubPrivateKey:    os.Getenv("GITHUB_PRIVATE_KEY"),
 		GitHubWebhookSecret: os.Getenv("GITHUB_WEBHOOK_SECRET"),
 		OpenAIAPIKey:        os.Getenv("OPENAI_API_KEY"),
+		CursorAPIKey:        os.Getenv("CURSOR_API_KEY"),
 		AWSRegion:           getenv("AWS_REGION", "us-east-1"),
 		AWSRoleARN:          os.Getenv("AWS_ROLE_ARN"),
 		AWSAccountID:        os.Getenv("AWS_ACCOUNT_ID"),

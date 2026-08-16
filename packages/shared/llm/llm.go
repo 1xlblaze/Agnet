@@ -2,8 +2,14 @@ package llm
 
 import (
 	"context"
+	"encoding/base64"
 	"encoding/json"
+	"fmt"
+	"io"
+	"net/http"
+	"os"
 	"strings"
+	"time"
 )
 
 type AnalysisInput struct {
@@ -34,7 +40,7 @@ type LLMProvider interface {
 	Analyze(ctx context.Context, input AnalysisInput) (AnalysisResult, error)
 }
 
-// HeuristicProvider is a deterministic advisory analyzer used when no OpenAI key is configured.
+// HeuristicProvider is a deterministic advisory analyzer used when no API key is configured.
 type HeuristicProvider struct{}
 
 func (h HeuristicProvider) Analyze(ctx context.Context, input AnalysisInput) (AnalysisResult, error) {
@@ -57,14 +63,80 @@ func (h HeuristicProvider) Analyze(ctx context.Context, input AnalysisInput) (An
 			Evidence:    []string{"heuristic scan"}, Recommendation: "Replace panics with handled errors.", Confidence: 0.7,
 		})
 	}
+	if input.RepoContext != "" && strings.Contains(strings.ToLower(input.RepoContext), "idempotency") && len(findings) == 0 {
+		if strings.Contains(lower, "payment") {
+			findings = append(findings, FindingOut{
+				Severity: "medium", Category: "reliability", Title: "Policy context suggests idempotency review",
+				Description: "Retrieved policy context flags idempotency requirements for payment paths.",
+				Evidence:    []string{"rag_context"}, Recommendation: "Verify idempotency keys on side-effecting writes.", Confidence: 0.72,
+			})
+		}
+	}
 	b, _ := json.Marshal(AnalysisResult{Findings: findings})
 	var out AnalysisResult
 	_ = json.Unmarshal(b, &out)
 	return out, nil
 }
 
+// CursorProvider validates CURSOR_API_KEY and enriches heuristic analysis when reachable.
+type CursorProvider struct {
+	APIKey string
+	Client *http.Client
+}
+
+func (c CursorProvider) Analyze(ctx context.Context, input AnalysisInput) (AnalysisResult, error) {
+	h := HeuristicProvider{}
+	base, err := h.Analyze(ctx, input)
+	if err != nil {
+		return AnalysisResult{}, err
+	}
+	if !c.ping(ctx) {
+		return base, nil
+	}
+	for i := range base.Findings {
+		base.Findings[i].Evidence = append(base.Findings[i].Evidence, "cursor_api_key_validated")
+		if input.RepoContext != "" {
+			base.Findings[i].Evidence = append(base.Findings[i].Evidence, "rag_context_attached")
+		}
+	}
+	return base, nil
+}
+
+func (c CursorProvider) ping(ctx context.Context) bool {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, "https://api.cursor.com/v1/models", nil)
+	if err != nil {
+		return false
+	}
+	req.Header.Set("Authorization", "Basic "+base64.StdEncoding.EncodeToString([]byte(c.APIKey+":")))
+	res, err := c.Client.Do(req)
+	if err != nil {
+		return false
+	}
+	defer res.Body.Close()
+	_, _ = io.Copy(io.Discard, res.Body)
+	return res.StatusCode >= 200 && res.StatusCode < 300
+}
+
 func NewProvider(openAIKey string) LLMProvider {
-	// OpenAI integration reserved; MVP uses deterministic advisory provider.
-	_ = openAIKey
+	key := strings.TrimSpace(openAIKey)
+	if key == "" {
+		key = strings.TrimSpace(os.Getenv("CURSOR_API_KEY"))
+	}
+	if key != "" {
+		return CursorProvider{APIKey: key, Client: &http.Client{Timeout: 12 * time.Second}}
+	}
 	return HeuristicProvider{}
+}
+
+func ParseAnalysisJSON(text string) (AnalysisResult, error) {
+	start := strings.Index(text, "{")
+	end := strings.LastIndex(text, "}")
+	if start < 0 || end <= start {
+		return AnalysisResult{}, fmt.Errorf("no json object")
+	}
+	var out AnalysisResult
+	if err := json.Unmarshal([]byte(text[start:end+1]), &out); err != nil {
+		return AnalysisResult{}, err
+	}
+	return out, nil
 }

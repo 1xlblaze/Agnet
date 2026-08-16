@@ -47,7 +47,7 @@ func main() {
 	defer rdb.Close()
 
 	st := store.New(pool)
-	pipe := &pipeline.Pipeline{Store: st, Log: log, LLM: llm.NewProvider(cfg.OpenAIAPIKey), Agent: agent.CodexStub{}}
+	pipe := &pipeline.Pipeline{Store: st, Log: log, LLM: llm.NewProvider(cfg.CursorAPIKey), Agent: agent.CodexStub{}}
 	log.Info("worker_started", nil)
 
 	ticker := time.NewTicker(500 * time.Millisecond)
