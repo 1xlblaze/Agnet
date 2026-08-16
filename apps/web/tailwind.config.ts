@@ -1,54 +1,63 @@
 import type { Config } from "tailwindcss";
 
 const config: Config = {
+  darkMode: "class",
   content: ["./src/**/*.{js,ts,jsx,tsx,mdx}"],
   theme: {
     extend: {
       colors: {
-        canvas: "#060b0a",
+        canvas: "rgb(var(--canvas) / <alpha-value>)",
         surface: {
-          DEFAULT: "#0f1614",
-          raised: "#141f1c",
-          overlay: "#1a2824",
+          DEFAULT: "rgb(var(--surface) / <alpha-value>)",
+          raised: "rgb(var(--surface-raised) / <alpha-value>)",
+          overlay: "rgb(var(--surface-overlay) / <alpha-value>)",
         },
         border: {
-          DEFAULT: "rgba(255,255,255,0.08)",
-          strong: "rgba(255,255,255,0.14)",
+          DEFAULT: "rgb(var(--border) / <alpha-value>)",
+          strong: "rgb(var(--border-strong) / <alpha-value>)",
         },
         accent: {
-          DEFAULT: "#34d399",
-          dim: "#1f6f5b",
-          glow: "rgba(52,211,153,0.15)",
+          DEFAULT: "rgb(var(--accent) / <alpha-value>)",
+          secondary: "rgb(var(--accent-secondary) / <alpha-value>)",
+          dim: "rgb(var(--accent-dim) / <alpha-value>)",
         },
         text: {
-          primary: "#f0faf6",
-          secondary: "#94b8aa",
-          muted: "#5f7a70",
+          primary: "rgb(var(--text-primary) / <alpha-value>)",
+          secondary: "rgb(var(--text-secondary) / <alpha-value>)",
+          muted: "rgb(var(--text-muted) / <alpha-value>)",
         },
-        warn: "#fbbf24",
-        danger: "#f87171",
+        warn: "rgb(var(--warn) / <alpha-value>)",
+        danger: "rgb(var(--danger) / <alpha-value>)",
+        agent: {
+          glow: "rgb(var(--agent-glow) / <alpha-value>)",
+          ring: "rgb(var(--agent-ring) / <alpha-value>)",
+        },
         // legacy aliases
-        ink: "#0f1614",
-        moss: "#34d399",
-        foam: "#f0faf6",
-        sand: "#94b8aa",
-        ember: "#f87171",
+        ink: "rgb(var(--surface) / <alpha-value>)",
+        moss: "rgb(var(--accent) / <alpha-value>)",
+        foam: "rgb(var(--text-primary) / <alpha-value>)",
+        sand: "rgb(var(--text-secondary) / <alpha-value>)",
+        ember: "rgb(var(--danger) / <alpha-value>)",
       },
       fontFamily: {
         sans: ['"Inter"', "system-ui", "sans-serif"],
         display: ['"Fraunces"', "Georgia", "serif"],
       },
       boxShadow: {
-        card: "0 0 0 1px rgba(255,255,255,0.06), 0 8px 32px rgba(0,0,0,0.4)",
-        glow: "0 0 40px rgba(52,211,153,0.12)",
+        card: "var(--shadow-card)",
+        glow: "var(--shadow-glow)",
+        agent: "var(--shadow-agent)",
       },
       borderRadius: {
         xl: "1rem",
         "2xl": "1.25rem",
+        "3xl": "1.5rem",
       },
       animation: {
         "fade-up": "fadeUp 0.5s ease forwards",
         "pulse-soft": "pulseSoft 2s ease-in-out infinite",
+        shimmer: "shimmer 2s linear infinite",
+        "agent-pulse": "agentPulse 2.5s ease-in-out infinite",
       },
       keyframes: {
         fadeUp: {
@@ -59,6 +68,18 @@ const config: Config = {
           "0%, 100%": { opacity: "0.4" },
           "50%": { opacity: "1" },
         },
+        shimmer: {
+          "0%": { backgroundPosition: "-200% 0" },
+          "100%": { backgroundPosition: "200% 0" },
+        },
+        agentPulse: {
+          "0%, 100%": { boxShadow: "0 0 0 0 rgb(var(--agent-ring) / 0.4)" },
+          "50%": { boxShadow: "0 0 0 8px rgb(var(--agent-ring) / 0)" },
+        },
+      },
+      backgroundImage: {
+        "agent-gradient": "var(--gradient-agent)",
+        "mesh": "var(--gradient-mesh)",
       },
     },
   },

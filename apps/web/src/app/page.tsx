@@ -35,7 +35,7 @@ export default async function DashboardPage() {
       <PageHeader
         label="Dashboard"
         title="Repository health overview"
-        description="Monitor baseline scores, track gaps across connected repos, and jump into reports or the assistant."
+        description="Monitor baseline scores, track gaps, and chat with the RAG-powered repository agent."
       />
 
       {error ? (
@@ -127,9 +127,9 @@ export default async function DashboardPage() {
           </div>
           <div>
             <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-accent/10 text-accent">3</div>
-            <h3 className="font-medium text-text-primary">Ask the assistant</h3>
+            <h3 className="font-medium text-text-primary">Ask the RAG agent</h3>
             <p className="mt-1 text-sm text-text-secondary">
-              Chat retrieves evidence from your baseline to answer targeted questions — not generic summaries.
+              Chat retrieves evidence from baseline scans via semantic search — each question surfaces different sources.
             </p>
           </div>
         </div>

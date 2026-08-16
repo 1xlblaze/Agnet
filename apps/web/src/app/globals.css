@@ -3,6 +3,59 @@
 @tailwind utilities;
 
 @layer base {
+  :root {
+    --canvas: 248 250 255;
+    --surface: 255 255 255;
+    --surface-raised: 255 255 255;
+    --surface-overlay: 241 245 255;
+    --border: 226 232 240;
+    --border-strong: 203 213 225;
+    --accent: 99 102 241;
+    --accent-secondary: 16 185 129;
+    --accent-dim: 79 70 229;
+    --text-primary: 15 23 42;
+    --text-secondary: 71 85 105;
+    --text-muted: 148 163 184;
+    --warn: 245 158 11;
+    --danger: 239 68 68;
+    --agent-glow: 99 102 241;
+    --agent-ring: 129 140 248;
+    --shadow-card: 0 1px 3px rgba(15, 23, 42, 0.06), 0 8px 24px rgba(99, 102, 241, 0.08);
+    --shadow-glow: 0 0 48px rgba(99, 102, 241, 0.15);
+    --shadow-agent: 0 4px 24px rgba(99, 102, 241, 0.2);
+    --gradient-agent: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #10b981 100%);
+    --gradient-mesh:
+      radial-gradient(ellipse 80% 60% at 10% -10%, rgba(99, 102, 241, 0.12), transparent),
+      radial-gradient(ellipse 60% 50% at 90% 0%, rgba(16, 185, 129, 0.1), transparent),
+      radial-gradient(ellipse 50% 40% at 50% 100%, rgba(139, 92, 246, 0.06), transparent);
+  }
+
+  .dark {
+    --canvas: 6 11 10;
+    --surface: 15 22 20;
+    --surface-raised: 20 31 28;
+    --surface-overlay: 26 40 36;
+    --border: 30 45 40;
+    --border-strong: 45 65 58;
+    --accent: 52 211 153;
+    --accent-secondary: 129 140 248;
+    --accent-dim: 31 111 91;
+    --text-primary: 240 250 246;
+    --text-secondary: 148 184 170;
+    --text-muted: 95 122 112;
+    --warn: 251 191 36;
+    --danger: 248 113 113;
+    --agent-glow: 52 211 153;
+    --agent-ring: 52 211 153;
+    --shadow-card: 0 0 0 1px rgba(255, 255, 255, 0.06), 0 8px 32px rgba(0, 0, 0, 0.4);
+    --shadow-glow: 0 0 40px rgba(52, 211, 153, 0.12);
+    --shadow-agent: 0 4px 24px rgba(52, 211, 153, 0.15);
+    --gradient-agent: linear-gradient(135deg, #34d399 0%, #6366f1 50%, #8b5cf6 100%);
+    --gradient-mesh:
+      radial-gradient(ellipse 80% 50% at 50% -20%, rgba(52, 211, 153, 0.12), transparent),
+      radial-gradient(ellipse 60% 40% at 100% 0%, rgba(99, 102, 241, 0.08), transparent);
+  }
+
   html {
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
@@ -10,9 +63,7 @@
 
   body {
     @apply min-h-screen bg-canvas font-sans text-text-primary;
-    background-image:
-      radial-gradient(ellipse 80% 50% at 50% -20%, rgba(52, 211, 153, 0.12), transparent),
-      radial-gradient(ellipse 60% 40% at 100% 0%, rgba(52, 211, 153, 0.06), transparent);
+    background-image: var(--gradient-mesh);
   }
 
   a {
@@ -20,17 +71,17 @@
   }
 
   ::selection {
-    @apply bg-accent/30 text-text-primary;
+    @apply bg-accent/25 text-text-primary;
   }
 }
 
 @layer components {
   .glass-card {
-    @apply rounded-2xl border border-border bg-surface/80 shadow-card backdrop-blur-sm;
+    @apply rounded-2xl border border-border bg-surface/90 shadow-card backdrop-blur-md;
   }
 
   .glass-card-hover {
-    @apply glass-card transition-all duration-300 hover:border-accent/25 hover:shadow-glow;
+    @apply glass-card transition-all duration-300 hover:border-accent/30 hover:shadow-glow;
   }
 
   .btn {
@@ -38,7 +89,11 @@
   }
 
   .btn-primary {
-    @apply btn bg-accent text-canvas shadow-sm hover:bg-accent/90 hover:shadow-glow active:scale-[0.98];
+    @apply btn bg-accent text-white shadow-sm hover:brightness-110 hover:shadow-glow active:scale-[0.98];
+  }
+
+  .dark .btn-primary {
+    @apply text-canvas;
   }
 
   .btn-secondary {
@@ -46,11 +101,11 @@
   }
 
   .btn-ghost {
-    @apply btn text-text-secondary hover:bg-white/5 hover:text-text-primary;
+    @apply btn text-text-secondary hover:bg-surface-overlay hover:text-text-primary;
   }
 
   .input {
-    @apply w-full rounded-xl border border-border bg-surface-raised px-4 py-2.5 text-sm text-text-primary placeholder:text-text-muted transition-colors focus:border-accent/50 focus:outline-none focus:ring-2 focus:ring-accent/20;
+    @apply w-full rounded-xl border border-border bg-surface px-4 py-2.5 text-sm text-text-primary placeholder:text-text-muted transition-colors focus:border-accent/50 focus:outline-none focus:ring-2 focus:ring-accent/20;
   }
 
   .badge {
@@ -58,7 +113,11 @@
   }
 
   .badge-success {
-    @apply badge bg-accent/15 text-accent;
+    @apply badge bg-accent-secondary/15 text-accent-secondary;
+  }
+
+  .dark .badge-success {
+    @apply bg-accent/15 text-accent;
   }
 
   .badge-warn {
@@ -70,7 +129,11 @@
   }
 
   .badge-neutral {
-    @apply badge bg-white/5 text-text-secondary;
+    @apply badge bg-surface-overlay text-text-secondary;
+  }
+
+  .badge-rag {
+    @apply badge bg-accent/10 text-accent ring-1 ring-accent/20;
   }
 
   .section-label {
@@ -81,9 +144,46 @@
     @apply font-display text-3xl font-semibold tracking-tight text-text-primary sm:text-4xl;
   }
 
+  .agent-orb {
+    @apply relative flex h-10 w-10 items-center justify-center rounded-2xl bg-agent-gradient text-white shadow-agent;
+  }
+
+  .agent-orb::before {
+    content: "";
+    @apply absolute -inset-1 rounded-2xl bg-agent-gradient opacity-30 blur-md;
+  }
+
+  .skill-chip {
+    @apply inline-flex items-center gap-1.5 rounded-full border border-border bg-surface px-3 py-1 text-xs font-medium text-text-secondary;
+  }
+
+  .skill-chip-active {
+    @apply skill-chip border-accent/30 bg-accent/5 text-accent;
+  }
+
+  .rag-step {
+    @apply flex items-center gap-2 rounded-lg border border-border bg-surface-raised px-3 py-2 text-xs text-text-secondary;
+  }
+
+  .rag-step-active {
+    @apply rag-step border-accent/30 bg-accent/5 text-accent;
+  }
+
+  .rag-step-done {
+    @apply rag-step border-accent-secondary/30 bg-accent-secondary/5 text-accent-secondary;
+  }
+
+  .dark .rag-step-done {
+    @apply border-accent/30 bg-accent/5 text-accent;
+  }
+
+  .source-chip {
+    @apply inline-flex items-center gap-1 rounded-lg border border-border bg-surface-overlay px-2 py-1 font-mono text-[10px] text-text-secondary;
+  }
+
   .scrollbar-thin {
     scrollbar-width: thin;
-    scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
+    scrollbar-color: rgb(var(--border)) transparent;
   }
 
   .scrollbar-thin::-webkit-scrollbar {
@@ -91,6 +191,6 @@
   }
 
   .scrollbar-thin::-webkit-scrollbar-thumb {
-    @apply rounded-full bg-white/10;
+    @apply rounded-full bg-border;
   }
 }

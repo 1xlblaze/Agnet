@@ -1,63 +1,39 @@
 "use client";
 
 import { useEffect, useRef, useState, useTransition } from "react";
+import { INTENT_SKILL_MAP } from "@/components/agent/agent-skills";
+import { AgentThinking } from "@/components/agent/agent-thinking";
+import { RagMessage } from "@/components/agent/rag-message";
+import { RagSkillsPanel } from "@/components/agent/rag-skills-panel";
 
 const SUGGESTIONS = [
+  "What's this repo about?",
   "Where does this repo lack?",
   "What security gaps exist?",
   "How can I improve reliability?",
-  "What's good about the architecture?",
 ];
+
+type GapSource = {
+  dimension: string;
+  check: string;
+  detail: string;
+  recommendation?: string;
+  passed?: boolean;
+};
 
 type Message = {
   role: "user" | "assistant";
   text: string;
   intent?: string;
+  sources?: string[];
+  gaps?: GapSource[];
 };
-
-function renderText(text: string) {
-  const parts = text.split(/(\*\*[^*]+\*\*)/g);
-  return parts.map((part, i) => {
-    if (part.startsWith("**") && part.endsWith("**")) {
-      return (
-        <strong key={i} className="font-semibold text-text-primary">
-          {part.slice(2, -2)}
-        </strong>
-      );
-    }
-    return <span key={i}>{part}</span>;
-  });
-}
-
-function formatLines(text: string) {
-  return text.split("\n").map((line, i) => {
-    if (line.startsWith("  → Fix:")) {
-      return (
-        <p key={i} className="ml-4 mt-1 text-xs text-accent">
-          {renderText(line)}
-        </p>
-      );
-    }
-    if (line.startsWith("✗") || line.startsWith("✓")) {
-      return (
-        <p key={i} className="mt-2 text-sm leading-relaxed">
-          {renderText(line)}
-        </p>
-      );
-    }
-    if (line.trim() === "") return <br key={i} />;
-    return (
-      <p key={i} className="text-sm leading-relaxed">
-        {renderText(line)}
-      </p>
-    );
-  });
-}
 
 export function RepoChat({ repositoryId, repoName }: { repositoryId: string; repoName: string }) {
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
   const [pending, start] = useTransition();
+  const [activeSkill, setActiveSkill] = useState<string | undefined>();
   const [err, setErr] = useState("");
   const bottomRef = useRef<HTMLDivElement>(null);
 
@@ -79,7 +55,18 @@ export function RepoChat({ repositoryId, repoName }: { repositoryId: string; rep
         });
         const data = await res.json();
         if (!res.ok) throw new Error(data?.error?.message || `chat failed ${res.status}`);
-        setMessages((m) => [...m, { role: "assistant", text: data.answer, intent: data.intent }]);
+        const intent = data.intent as string | undefined;
+        setActiveSkill(intent ? INTENT_SKILL_MAP[intent] : undefined);
+        setMessages((m) => [
+          ...m,
+          {
+            role: "assistant",
+            text: data.answer,
+            intent,
+            sources: data.sources,
+            gaps: data.gaps,
+          },
+        ]);
       } catch (e) {
         setErr(e instanceof Error ? e.message : "failed");
       }
@@ -88,21 +75,21 @@ export function RepoChat({ repositoryId, repoName }: { repositoryId: string; rep
 
   return (
     <div className="glass-card flex flex-col overflow-hidden">
-      <div className="border-b border-border bg-surface-raised/50 px-5 py-4">
+      <div className="border-b border-border bg-agent-gradient px-5 py-4 text-white">
         <div className="flex items-center gap-3">
-          <div className="flex h-9 w-9 items-center justify-center rounded-xl bg-accent/10">
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#34d399" strokeWidth="2">
-              <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" />
-            </svg>
+          <div className="flex h-11 w-11 items-center justify-center rounded-2xl bg-white/20 text-sm font-bold backdrop-blur-sm">
+            AI
           </div>
           <div>
-            <p className="text-sm font-medium text-text-primary">Repository assistant</p>
-            <p className="text-xs text-text-muted">
-              Ask about gaps, strengths, or fixes for <span className="text-text-secondary">{repoName}</span>
+            <p className="text-sm font-semibold">Repository agent</p>
+            <p className="text-xs text-white/80">
+              RAG assistant for <span className="font-medium">{repoName}</span>
             </p>
           </div>
         </div>
       </div>
+
+      <RagSkillsPanel activeSkill={activeSkill} />
 
       <div className="flex flex-wrap gap-2 border-b border-border px-4 py-3">
         {SUGGESTIONS.map((s) => (
@@ -110,7 +97,7 @@ export function RepoChat({ repositoryId, repoName }: { repositoryId: string; rep
             key={s}
             type="button"
             disabled={pending}
-            className="rounded-full border border-border bg-surface-raised px-3 py-1.5 text-xs text-text-secondary transition hover:border-accent/40 hover:bg-accent/5 hover:text-text-primary disabled:opacity-50"
+            className="rounded-full border border-border bg-surface px-3 py-1.5 text-xs text-text-secondary transition hover:border-accent/40 hover:bg-accent/5 hover:text-accent disabled:opacity-50"
             onClick={() => ask(s)}
           >
             {s}
@@ -118,55 +105,34 @@ export function RepoChat({ repositoryId, repoName }: { repositoryId: string; rep
         ))}
       </div>
 
-      <div className="scrollbar-thin h-[28rem] space-y-4 overflow-y-auto px-4 py-4">
+      <div className="scrollbar-thin h-[32rem] space-y-5 overflow-y-auto px-4 py-4">
         {messages.length === 0 ? (
           <div className="flex h-full flex-col items-center justify-center px-4 text-center">
-            <div className="mb-3 flex h-12 w-12 items-center justify-center rounded-2xl bg-white/5 text-xl text-text-muted">
-              ?
-            </div>
-            <p className="text-sm text-text-secondary">Ask a specific question to get targeted answers.</p>
-            <p className="mt-1 text-xs text-text-muted">
-              Different questions return different evidence — not a generic summary.
+            <div className="agent-orb mb-4 text-sm font-bold">AI</div>
+            <p className="text-sm font-medium text-text-primary">Ask anything about this repository</p>
+            <p className="mt-2 max-w-xs text-xs text-text-muted">
+              Answers are grounded in baseline scan evidence via semantic RAG — each question retrieves different
+              sources.
             </p>
           </div>
         ) : null}
-        {messages.map((m, i) => (
-          <div key={i} className={`flex ${m.role === "user" ? "justify-end" : "justify-start"}`}>
-            <div
-              className={`max-w-[88%] rounded-2xl px-4 py-3 ${
-                m.role === "user"
-                  ? "rounded-br-md bg-accent text-canvas"
-                  : "rounded-bl-md border border-border bg-surface-raised text-text-secondary"
-              }`}
-            >
-              {m.role === "assistant" && m.intent ? (
-                <p className="mb-2 text-[10px] font-semibold uppercase tracking-wider text-text-muted">
-                  {m.intent.replace(/_/g, " ")}
-                </p>
-              ) : null}
-              <div>{formatLines(m.text)}</div>
-            </div>
-          </div>
-        ))}
-        {pending ? (
-          <div className="flex justify-start">
-            <div className="rounded-2xl rounded-bl-md border border-border bg-surface-raised px-4 py-3">
-              <div className="flex items-center gap-2 text-sm text-text-muted">
-                <span className="inline-flex gap-1">
-                  <span className="h-1.5 w-1.5 animate-pulse-soft rounded-full bg-accent" />
-                  <span className="h-1.5 w-1.5 animate-pulse-soft rounded-full bg-accent [animation-delay:0.2s]" />
-                  <span className="h-1.5 w-1.5 animate-pulse-soft rounded-full bg-accent [animation-delay:0.4s]" />
-                </span>
-                Searching baseline evidence…
+        {messages.map((m, i) =>
+          m.role === "user" ? (
+            <div key={i} className="flex justify-end">
+              <div className="max-w-[85%] rounded-2xl rounded-br-md bg-accent px-4 py-3 text-sm text-white dark:text-canvas">
+                {m.text}
               </div>
             </div>
-          </div>
-        ) : null}
+          ) : (
+            <RagMessage key={i} text={m.text} intent={m.intent} sources={m.sources} gaps={m.gaps} />
+          ),
+        )}
+        {pending ? <AgentThinking /> : null}
         <div ref={bottomRef} />
       </div>
 
       <form
-        className="flex gap-2 border-t border-border bg-surface-raised/30 p-4"
+        className="flex gap-2 border-t border-border bg-surface-overlay/30 p-4"
         onSubmit={(e) => {
           e.preventDefault();
           ask(input);
@@ -174,13 +140,13 @@ export function RepoChat({ repositoryId, repoName }: { repositoryId: string; rep
       >
         <input
           className="input flex-1"
-          placeholder="e.g. What security issues exist?"
+          placeholder="Ask about gaps, security, architecture…"
           value={input}
           onChange={(e) => setInput(e.target.value)}
           disabled={pending}
         />
         <button type="submit" disabled={pending || !input.trim()} className="btn-primary shrink-0">
-          Send
+          {pending ? "…" : "Ask"}
         </button>
       </form>
       {err ? <p className="px-4 pb-3 text-xs text-danger">{err}</p> : null}
