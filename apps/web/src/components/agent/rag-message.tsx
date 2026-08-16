@@ -62,6 +62,7 @@ export function RagMessage({
 }) {
   const skillId = intent ? INTENT_SKILL_MAP[intent] : undefined;
   const isRag = intent === "retrieval";
+  const isOverview = intent?.endsWith("_overview") || intent === "repo_about";
 
   return (
     <div className="flex justify-start">
@@ -73,6 +74,7 @@ export function RagMessage({
               <div className="mb-3 flex flex-wrap items-center gap-2">
                 <span className="badge-rag">{intentLabel(intent)}</span>
                 {isRag ? <span className="text-[10px] text-text-muted">semantic retrieval</span> : null}
+                {isOverview ? <span className="text-[10px] text-text-muted">repository graph + path scan</span> : null}
                 {skillId ? (
                   <span className="text-[10px] text-text-muted">via {skillId.replace(/_/g, " ")}</span>
                 ) : null}
@@ -98,7 +100,7 @@ export function RagMessage({
           </div>
         ) : null}
 
-        {gaps && gaps.length > 0 ? (
+        {gaps && gaps.length > 0 && !isOverview ? (
           <div className="ml-[52px] space-y-2">
             {gaps.slice(0, 4).map((g) => (
               <div
