@@ -1,31 +1,7 @@
 import Link from "next/link";
-import { apiGet } from "@/lib/api";
+import { loadDashboard, type RepoReport } from "@/lib/agentguard/dashboard";
 
 export const dynamic = "force-dynamic";
-
-type RepoReport = {
-  id: string;
-  full_name: string;
-  github_url?: string;
-  project_id: string;
-  status: string;
-  production_confidence: number;
-  report?: {
-    production_confidence?: number;
-    scores?: {
-      security?: number;
-      reliability?: number;
-      performance?: number;
-      architecture?: number;
-      database?: number;
-    };
-  } | null;
-};
-
-type Dashboard = {
-  items?: RepoReport[];
-  repositories_with_reports?: RepoReport[];
-};
 
 function Score({ label, value }: { label: string; value: number }) {
   return (
@@ -45,7 +21,7 @@ export default async function DashboardPage() {
   let repos: RepoReport[] = [];
   let error = "";
   try {
-    const data = await apiGet<Dashboard>("/api/v1/dashboard");
+    const data = await loadDashboard();
     repos = data.items ?? data.repositories_with_reports ?? [];
   } catch (e) {
     error = e instanceof Error ? e.message : "failed to load";

@@ -1,15 +1,9 @@
 import { fail, ok } from "@/lib/api-response";
-import { dashboardReports } from "@/lib/agentguard/reports";
-import { dashboard } from "@/lib/agentguard/db";
-import { proxyEdge, useEdgeApi } from "@/lib/edge-proxy";
-import { hasDatabase, hasSupabaseAdmin } from "@/lib/supabase";
+import { loadDashboard } from "@/lib/agentguard/dashboard";
 
 export async function GET() {
   try {
-    if (useEdgeApi()) return proxyEdge("dashboard");
-    if (hasSupabaseAdmin()) return ok(await dashboardReports());
-    if (hasDatabase()) return ok(await dashboard());
-    return fail("config_error", "Supabase or database configuration is required", 500);
+    return ok(await loadDashboard());
   } catch (e) {
     return fail("dashboard_failed", e instanceof Error ? e.message : "error", 500);
   }
