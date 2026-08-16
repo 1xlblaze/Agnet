@@ -1,6 +1,7 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient, type SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
 import { buildBaselineDocument, fetchGitHubRepo } from "./baseline.ts";
+import { answerRepoQuestion, extractGaps } from "./repo-rag.ts";
 
 const cors = {
   "Access-Control-Allow-Origin": "*",
@@ -129,6 +130,7 @@ async function buildRepoCards() {
           scores,
           baseline: reportsForRepo.baseline ?? null,
           pr: reportsForRepo.pr ?? null,
+          gaps: extractGaps(summary as Record<string, unknown>),
         }
       : null;
 
@@ -152,6 +154,7 @@ async function buildRepoCards() {
       report,
       reports: reportsForRepo,
       has_report: Boolean(summary),
+      gap_count: report?.gaps?.length ?? 0,
     };
   });
 }
@@ -359,6 +362,70 @@ async function createRepository(body: Record<string, unknown>) {
   return repository;
 }
 
+async function getRepoReport(repoId: string) {
+  const sb = admin();
+  const { data: repo, error } = await sb.from("repositories").select("*").eq("id", repoId).maybeSingle();
+  if (error) throw error;
+  if (!repo) throw new Error("repository not found");
+
+  const { data: reports } = await sb
+    .from("agentguard_reports")
+    .select("kind, document, version, updated_at")
+    .eq("repository_id", repoId)
+    .in("kind", ["summary", "baseline"]);
+
+  const byKind: Record<string, unknown> = {};
+  for (const r of reports || []) {
+    byKind[r.kind] = r.document;
+    byKind[`${r.kind}_version`] = r.version;
+    byKind[`${r.kind}_updated_at`] = r.updated_at;
+  }
+
+  const summary = (byKind.summary as Record<string, unknown>) || null;
+  const gaps = summary ? extractGaps(summary) : [];
+
+  return {
+    repository: repo,
+    summary,
+    baseline: byKind.baseline || null,
+    gaps,
+    gap_count: gaps.length,
+    production_confidence: summary?.production_confidence ?? 0,
+    has_report: Boolean(summary),
+  };
+}
+
+async function chatAboutRepo(repoId: string, message: string) {
+  const reportData = await getRepoReport(repoId);
+  if (!reportData.summary) {
+    throw new Error("No baseline report found. Run a baseline scan first.");
+  }
+  const result = answerRepoQuestion(reportData.summary as Record<string, unknown>, message);
+  return {
+    repository_id: repoId,
+    question: message,
+    answer: result.answer,
+    gaps: result.gaps,
+    sources: result.sources,
+    production_confidence: reportData.production_confidence,
+  };
+}
+
+async function getProjectEnriched(id: string) {
+  const sb = admin();
+  const { data: project, error } = await sb.from("projects").select("*").eq("id", id).maybeSingle();
+  if (error) throw error;
+  if (!project) throw new Error("project not found");
+
+  const { data: repo } = await sb.from("repositories").select("*").eq("project_id", id).maybeSingle();
+  let report = null;
+  if (repo) {
+    report = await getRepoReport(repo.id);
+  }
+
+  return { ...project, repository: repo, report };
+}
+
 async function analyzeRepository(repoId: string) {
   const sb = admin();
   const { data: repo, error } = await sb.from("repositories").select("*").eq("id", repoId).maybeSingle();
@@ -478,12 +545,31 @@ Deno.serve(async (req) => {
       return json(await analyzeRepository(parts[1]), 202);
     }
 
+    if (parts.length === 3 && parts[0] === "repositories" && parts[2] === "chat" && method === "POST") {
+      const body = await req.json();
+      if (!body?.message) return fail("invalid_body", "message required", 400);
+      return json(await chatAboutRepo(parts[1], body.message as string));
+    }
+
+    if (parts.length === 3 && parts[0] === "repositories" && parts[2] === "report" && method === "GET") {
+      return json(await getRepoReport(parts[1]));
+    }
+
     if (parts.length === 3 && parts[0] === "pull-requests" && parts[2] === "analyze" && method === "POST") {
       return json(await analyzePullRequest(parts[1]), 202);
     }
 
     if (parts.length === 2 && method === "GET") {
       const [resource, id] = parts;
+      if (resource === "projects") {
+        try {
+          return json(await getProjectEnriched(id));
+        } catch (e) {
+          const message = e instanceof Error ? e.message : String(e);
+          if (message.includes("not found")) return fail("not_found", message, 404);
+          throw e;
+        }
+      }
       const tableMap: Record<string, string> = {
         projects: "projects",
         repositories: "repositories",

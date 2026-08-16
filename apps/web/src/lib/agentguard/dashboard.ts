@@ -9,8 +9,10 @@ export type RepoReport = {
   project_id: string;
   status: string;
   production_confidence: number;
+  gap_count?: number;
   report?: {
     production_confidence?: number;
+    gaps?: Array<{ dimension: string; check: string; detail: string }>;
     scores?: {
       security?: number;
       reliability?: number;
