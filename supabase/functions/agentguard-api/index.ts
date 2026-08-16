@@ -1,6 +1,6 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient, type SupabaseClient } from "https://esm.sh/@supabase/supabase-js@2.49.1";
-import { buildGraphFromPaths, fetchGitHubRepo, scoreBaseline } from "./baseline.ts";
+import { buildBaselineDocument, buildGraphFromPaths, fetchGitHubRepo } from "./baseline.ts";
 import { extractAstFromPaths, type AstIndex } from "./ast-extract.ts";
 import { answerRepoQuestion, extractGaps } from "./repo-rag.ts";
 
