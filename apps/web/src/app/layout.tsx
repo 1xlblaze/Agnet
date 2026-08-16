@@ -1,10 +1,11 @@
-import type { Metadata } from "next";
-import "./globals.css";
+import Link from "next/link";
 
-export const metadata: Metadata = {
-  title: "AgentGuard",
-  description: "Production control plane for AI coding agents",
-};
+const NAV = [
+  { href: "/", label: "Dashboard" },
+  { href: "/projects", label: "Projects" },
+  { href: "/pull-requests", label: "Pull Requests" },
+  { href: "/deployments", label: "Deployments" },
+];
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
@@ -12,25 +13,33 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <head>
         <link rel="preconnect" href="https://fonts.googleapis.com" />
         <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="" />
-        <link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;700&family=Source+Sans+3:wght@400;600;700&display=swap" rel="stylesheet" />
+        <link
+          href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;700&family=Source+Sans+3:wght@400;600;700&display=swap"
+          rel="stylesheet"
+        />
       </head>
       <body>
         <div className="min-h-screen">
-          <header className="mx-auto flex max-w-6xl items-end justify-between px-6 pb-4 pt-8">
-            <div>
-              <p className="font-display text-4xl font-bold tracking-tight text-foam md:text-5xl">AgentGuard</p>
-              <p className="mt-2 max-w-xl text-sm text-sand/90 md:text-base">
-                Verify AI-generated changes before they reach production.
-              </p>
+          <header className="sticky top-0 z-50 border-b border-foam/10 bg-ink/80 backdrop-blur-md">
+            <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-4 sm:px-6">
+              <Link href="/" className="min-w-0">
+                <p className="font-display text-2xl font-bold tracking-tight text-foam sm:text-3xl">AgentGuard</p>
+                <p className="hidden text-xs text-sand/70 sm:block">Verify AI-generated changes before production</p>
+              </Link>
+              <nav className="flex flex-wrap justify-end gap-1 sm:gap-2">
+                {NAV.map((item) => (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    className="rounded-lg px-2.5 py-1.5 text-xs font-medium text-sand/80 transition hover:bg-foam/5 hover:text-foam sm:px-3 sm:text-sm"
+                  >
+                    {item.label}
+                  </Link>
+                ))}
+              </nav>
             </div>
-            <nav className="flex gap-4 text-sm text-foam/80">
-              <a href="/">Dashboard</a>
-              <a href="/projects">Projects</a>
-              <a href="/pull-requests">Pull Requests</a>
-              <a href="/deployments">Deployments</a>
-            </nav>
           </header>
-          <main className="mx-auto max-w-6xl px-6 pb-16 pt-4">{children}</main>
+          <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6 sm:py-10">{children}</main>
         </div>
       </body>
     </html>

@@ -4,16 +4,43 @@ export type GapItem = {
   detail: string;
   weight: number;
   source: string;
+  passed?: boolean;
+  recommendation?: string;
 };
 
-type EvidenceItem = GapItem & { passed: boolean };
+type EvidenceItem = {
+  check: string;
+  detail: string;
+  passed: boolean;
+  source: string;
+  weight: number;
+};
 
-export type RepoChunk = {
+type RepoChunk = {
   id: string;
   dimension: string;
   text: string;
   tokens: Set<string>;
-  gap: GapItem;
+  item: GapItem;
+};
+
+const RECOMMENDATIONS: Record<string, string> = {
+  schema_migrations: "Add a migrations/ directory (Flyway, Alembic, Prisma, or golang-migrate) and version schema changes.",
+  orm_or_query_layer: "Introduce an ORM or query layer (Prisma, Drizzle, GORM, SQLAlchemy) for safer database access.",
+  no_env_in_repo: "Remove .env files from git; use .env.example and inject secrets via CI/CD or a secret manager.",
+  dependency_lockfile: "Commit a lockfile (package-lock.json, go.sum, poetry.lock) for reproducible builds.",
+  ci_workflow: "Add .github/workflows/ with lint, test, and build jobs on every pull request.",
+  no_unsafe_sinks_in_tree: "Audit code for eval() and dangerouslySetInnerHTML; replace with safe alternatives.",
+  automated_tests: "Add unit/integration tests under test/, __tests__/, or *_test.go files.",
+  error_handling_signals: "Add structured error handling middleware and consistent error types.",
+  build_config: "Add Dockerfile, Makefile, or framework build config for repeatable deployments.",
+  repo_size: "Consider splitting large repos or pruning generated assets from version control.",
+  language_diversity: "Consolidate languages where possible to reduce maintenance burden.",
+  service_count_bounded: "Document service boundaries; consider splitting if microservices grow unchecked.",
+  graph_complexity: "Simplify dependency graph — reduce circular deps and hidden coupling.",
+  api_surface: "Document and limit public API surface; add API gateway or rate limiting.",
+  monorepo_structure: "For multi-service repos, adopt apps/ or packages/ monorepo layout.",
+  single_primary_db: "Document primary database ownership; avoid silent multi-DB sprawl.",
 };
 
 function tokenize(text: string): Set<string> {
@@ -26,58 +53,52 @@ function tokenize(text: string): Set<string> {
   );
 }
 
-export function extractGaps(report: Record<string, unknown>): GapItem[] {
-  const gaps: GapItem[] = [];
+function withRecommendation(ev: EvidenceItem, dimension: string): GapItem {
+  return {
+    dimension,
+    check: ev.check,
+    detail: ev.detail,
+    weight: ev.weight,
+    source: ev.source,
+    passed: ev.passed,
+    recommendation: RECOMMENDATIONS[ev.check] || `Review the ${ev.check.replace(/_/g, " ")} finding and align with production best practices.`,
+  };
+}
+
+export function extractAllEvidence(report: Record<string, unknown>): GapItem[] {
+  const items: GapItem[] = [];
   const scores = (report.scores as Record<string, unknown>) || {};
-  const dimensions = (scores.dimensions as Record<string, { score?: number; evidence?: EvidenceItem[] }>) || {};
+  const dimensions = (scores.dimensions as Record<string, { evidence?: EvidenceItem[] }>) || {};
 
   for (const [dimension, dim] of Object.entries(dimensions)) {
     for (const ev of dim.evidence || []) {
-      if (!ev.passed) {
-        gaps.push({
-          dimension,
-          check: ev.check,
-          detail: ev.detail,
-          weight: ev.weight,
-          source: ev.source,
-        });
-      }
+      items.push(withRecommendation(ev, dimension));
     }
   }
-
-  // Fallback: baseline document scores structure
-  const baseline = report.baseline as Record<string, unknown> | undefined;
-  const baselineScores = (baseline?.scores as Record<string, { evidence?: EvidenceItem[] }>) || {};
-  if (gaps.length === 0) {
-    for (const [dimension, dim] of Object.entries(baselineScores)) {
-      if (dimension === "meta" || dimension === "rubric_version" || dimension === "production_confidence") continue;
-      const evidence = dim.evidence || [];
-      for (const ev of evidence) {
-        if (!ev.passed) {
-          gaps.push({ dimension, check: ev.check, detail: ev.detail, weight: ev.weight, source: ev.source });
-        }
-      }
-    }
-  }
-
-  return gaps;
+  return items;
 }
 
-function buildChunks(gaps: GapItem[]): RepoChunk[] {
-  return gaps.map((gap, i) => {
-    const text = `${gap.dimension} ${gap.check}: ${gap.detail}`;
-    return {
-      id: `gap-${i}`,
-      dimension: gap.dimension,
-      text,
-      tokens: tokenize(text),
-      gap,
-    };
+export function extractGaps(report: Record<string, unknown>): GapItem[] {
+  return extractAllEvidence(report).filter((e) => !e.passed);
+}
+
+function buildChunks(items: GapItem[]): RepoChunk[] {
+  return items.map((item, i) => {
+    const text = `${item.dimension} ${item.check} ${item.detail} ${item.recommendation || ""}`;
+    return { id: `chunk-${i}`, dimension: item.dimension, text, tokens: tokenize(text), item };
   });
 }
 
-function retrieveChunks(query: string, chunks: RepoChunk[], limit = 5): RepoChunk[] {
+function retrieveChunks(query: string, chunks: RepoChunk[], limit = 4): RepoChunk[] {
   const qTokens = tokenize(query);
+  const synonyms: Record<string, string[]> = {
+    security: ["security", "secret", "env", "vulner", "auth", "safe"],
+    reliability: ["reliab", "test", "error", "handler", "stable", "idempot"],
+    performance: ["perform", "speed", "size", "build", "fast", "slow"],
+    architecture: ["architect", "monorepo", "graph", "structure", "layout", "design"],
+    database: ["database", "db", "migrat", "orm", "sql", "schema", "postgres"],
+  };
+
   if (qTokens.size === 0) return chunks.slice(0, limit);
 
   return chunks
@@ -85,6 +106,9 @@ function retrieveChunks(query: string, chunks: RepoChunk[], limit = 5): RepoChun
       let overlap = 0;
       for (const t of qTokens) {
         if (chunk.tokens.has(t)) overlap++;
+      }
+      for (const [dim, syns] of Object.entries(synonyms)) {
+        if (chunk.dimension === dim && syns.some((s) => query.toLowerCase().includes(s))) overlap += 2;
       }
       const score = overlap / Math.sqrt(qTokens.size * chunk.tokens.size || 1);
       return { chunk, score };
@@ -95,31 +119,92 @@ function retrieveChunks(query: string, chunks: RepoChunk[], limit = 5): RepoChun
     .map((x) => x.chunk);
 }
 
-function formatGaps(gaps: GapItem[], title: string): string {
-  if (gaps.length === 0) return `**${title}:** No gaps found — all checks passed for this area.`;
-  const lines = gaps.map(
-    (g) => `- **${g.check}** (${g.dimension}): ${g.detail}`,
-  );
-  return `**${title}** (${gaps.length} gap${gaps.length === 1 ? "" : "s"}):\n${lines.join("\n")}`;
+function formatItem(item: GapItem, includeRec = true): string {
+  const status = item.passed ? "✓ Passed" : "✗ Gap";
+  let line = `${status} — ${item.check.replace(/_/g, " ")}: ${item.detail}`;
+  if (!item.passed && includeRec && item.recommendation) {
+    line += `\n  → Fix: ${item.recommendation}`;
+  }
+  return line;
+}
+
+function isStrengthsQuestion(q: string): boolean {
+  return /what(?:'s| is) good|strength|passed|doing well|positive/.test(q);
+}
+
+const DIM_PATTERNS: Record<string, RegExp> = {
+  security: /\b(secur|secret|\.env|vulner|auth|safe)/,
+  reliability: /\b(reliab|test|error|handler|stable|idempot)/,
+  performance: /\b(perform|speed|size|build|fast|slow)/,
+  architecture: /\b(architect|monorepo|graph|structur|layout|design)/,
+  database: /\b(database|\bdb\b|migrat|orm|sql|schema|postgres)/,
+};
+
+function isAllGapsQuestion(q: string): boolean {
+  for (const pattern of Object.values(DIM_PATTERNS)) {
+    if (pattern.test(q)) return false;
+  }
+  return /^(where|what).*(lack|weakness|shortcoming)/.test(q) ||
+    /^(list|show|all)\s+(gap|issue|problem)/.test(q) ||
+    /^what(?:'s| is) wrong/.test(q) ||
+    /^where does this repo lack/.test(q);
 }
 
 export function answerRepoQuestion(
   report: Record<string, unknown>,
   question: string,
-): { answer: string; gaps: GapItem[]; sources: string[] } {
-  const gaps = extractGaps(report);
-  const chunks = buildChunks(gaps);
+): { answer: string; gaps: GapItem[]; sources: string[]; intent: string } {
+  const allEvidence = extractAllEvidence(report);
+  const gaps = allEvidence.filter((e) => !e.passed);
+  const passed = allEvidence.filter((e) => e.passed);
+  const chunks = buildChunks(allEvidence);
   const q = question.toLowerCase().trim();
   const fullName = (report.full_name as string) || "this repository";
   const confidence = Number(report.production_confidence ?? (report.scores as Record<string, unknown>)?.production_confidence ?? 0);
+  const scores = (report.scores as Record<string, number>) || {};
 
-  const sources: string[] = [];
+  // Dimension-specific (check BEFORE broad all-gaps)
+  for (const [dim, pattern] of Object.entries(DIM_PATTERNS)) {
+    if (pattern.test(q)) {
+      const dimGaps = gaps.filter((g) => g.dimension === dim);
+      const dimPassed = passed.filter((g) => g.dimension === dim);
+      const dimScore = scores[dim] ?? "—";
 
-  // Broad "where does it lack" questions
-  if (/lack|gap|weak|missing|improve|issue|problem|fail|concern|shortcoming|deficien/.test(q) && !/security|reliab|perform|architect|database|test|ci/.test(q)) {
+      if (/good|passed|strength|positive/.test(q)) {
+        const lines = dimPassed.map((p) => formatItem(p, false));
+        return {
+          intent: `${dim}_strengths`,
+          answer: `**${dim.charAt(0).toUpperCase() + dim.slice(1)}** score: **${dimScore}/100** for ${fullName}\n\nPassed checks:\n${lines.length ? lines.join("\n") : "No passed checks recorded."}`,
+          gaps: dimGaps,
+          sources: dimPassed.map((p) => p.check),
+        };
+      }
+
+      if (dimGaps.length === 0) {
+        return {
+          intent: `${dim}_clear`,
+          answer: `**${dim.charAt(0).toUpperCase() + dim.slice(1)}** looks good for ${fullName} (score: **${dimScore}/100**). All ${dim} checks passed.`,
+          gaps: [],
+          sources: dimPassed.map((p) => p.check),
+        };
+      }
+
+      const lines = dimGaps.map((g) => formatItem(g));
+      return {
+        intent: `${dim}_gaps`,
+        answer: `**${dim.charAt(0).toUpperCase() + dim.slice(1)} gaps** for ${fullName} (score: **${dimScore}/100**):\n\n${lines.join("\n\n")}`,
+        gaps: dimGaps,
+        sources: dimGaps.map((g) => g.check),
+      };
+    }
+  }
+
+  // Explicit "show all gaps" only
+  if (isAllGapsQuestion(q)) {
     if (gaps.length === 0) {
       return {
-        answer: `**${fullName}** scored **${confidence}/100** production confidence with no failed baseline checks. The repository looks solid across security, reliability, performance, architecture, and database dimensions.`,
+        intent: "all_clear",
+        answer: `**${fullName}** scored **${confidence}/100** with no failed checks. The repo passes all baseline dimensions.`,
         gaps: [],
         sources: [],
       };
@@ -130,51 +215,59 @@ export function answerRepoQuestion(
       list.push(g);
       byDim.set(g.dimension, list);
     }
-    const sections = [...byDim.entries()].map(([dim, items]) => formatGaps(items, dim.charAt(0).toUpperCase() + dim.slice(1)));
+    const sections = [...byDim.entries()].map(([dim, items]) => {
+      const lines = items.map((g) => formatItem(g));
+      return `**${dim.charAt(0).toUpperCase() + dim.slice(1)}** (${items.length}):\n${lines.join("\n\n")}`;
+    });
     return {
-      answer: `**${fullName}** has **${gaps.length} gap${gaps.length === 1 ? "" : "s"}** (production confidence: **${confidence}/100**):\n\n${sections.join("\n\n")}\n\nRun baseline again after fixes to refresh scores.`,
+      intent: "all_gaps",
+      answer: `**${fullName}** — **${gaps.length} gaps** found (confidence: **${confidence}/100**):\n\n${sections.join("\n\n")}`,
       gaps,
       sources: gaps.map((g) => g.check),
     };
   }
 
-  // Dimension-specific
-  const dimMap: Record<string, RegExp> = {
-    security: /secur|secret|env|vulner|auth/,
-    reliability: /reliab|test|error|handler|idempot/,
-    performance: /perform|speed|size|build/,
-    architecture: /architect|monorepo|graph|complex|api surface/,
-    database: /database|db|migrat|orm|sql|schema/,
-  };
-
-  for (const [dim, pattern] of Object.entries(dimMap)) {
-    if (pattern.test(q)) {
-      const dimGaps = gaps.filter((g) => g.dimension === dim);
-      return {
-        answer: formatGaps(dimGaps, `${dim.charAt(0).toUpperCase() + dim.slice(1)} gaps for ${fullName}`),
-        gaps: dimGaps,
-        sources: dimGaps.map((g) => g.check),
-      };
-    }
-  }
-
-  // RAG retrieval over gap chunks
-  const relevant = retrieveChunks(question, chunks, 5);
-  if (relevant.length > 0) {
-    const matched = relevant.map((c) => c.gap);
-    sources.push(...matched.map((g) => g.check));
-    const lines = matched.map((g) => `- **${g.check}** (${g.dimension}): ${g.detail}`);
+  // Strengths overview
+  if (isStrengthsQuestion(q)) {
+    const top = passed.slice(0, 6).map((p) => formatItem(p, false));
     return {
-      answer: `Based on the baseline scan of **${fullName}**:\n\n${lines.join("\n")}`,
-      gaps: matched,
-      sources,
+      intent: "strengths",
+      answer: `**Strengths** for ${fullName} (confidence: **${confidence}/100**):\n\n${top.join("\n")}\n\nScores: Security ${scores.security}, Reliability ${scores.reliability}, Performance ${scores.performance}, Architecture ${scores.architecture}, Database ${scores.database}.`,
+      gaps: [],
+      sources: passed.map((p) => p.check),
     };
   }
 
-  // Score summary fallback
-  const scores = (report.scores as Record<string, number>) || {};
+  // RAG retrieval for free-form questions
+  const relevant = retrieveChunks(question, chunks, 4);
+  if (relevant.length > 0) {
+    const lines = relevant.map((c) => formatItem(c.item));
+    return {
+      intent: "retrieval",
+      answer: `For **${fullName}**, based on your question:\n\n${lines.join("\n\n")}`,
+      gaps: relevant.filter((c) => !c.item.passed).map((c) => c.item),
+      sources: relevant.map((c) => c.item.check),
+    };
+  }
+
+  // How to improve / fix
+  if (/how (to )?fix|how (can|do) i improve|what should i do|recommend/.test(q)) {
+    if (gaps.length === 0) {
+      return { intent: "fix_none", answer: `No fixes needed — ${fullName} passes all baseline checks.`, gaps: [], sources: [] };
+    }
+    const top = gaps.slice(0, 3).map((g) => formatItem(g));
+    return {
+      intent: "fix_top",
+      answer: `**Top priorities** to improve ${fullName}:\n\n${top.join("\n\n")}\n\n${gaps.length > 3 ? `Plus ${gaps.length - 3} more gaps — ask about a specific area (security, tests, database).` : ""}`,
+      gaps: gaps.slice(0, 3),
+      sources: gaps.slice(0, 3).map((g) => g.check),
+    };
+  }
+
+  // Default: concise summary (NOT the same as all-gaps)
   return {
-    answer: `**${fullName}** baseline summary (confidence: **${confidence}/100**):\n- Security: ${scores.security ?? "—"}\n- Reliability: ${scores.reliability ?? "—"}\n- Performance: ${scores.performance ?? "—"}\n- Architecture: ${scores.architecture ?? "—"}\n- Database: ${scores.database ?? "—"}\n\nAsk about specific areas: "security gaps", "missing tests", "database issues", or "where does this repo lack?"`,
+    intent: "summary",
+    answer: `**${fullName}** baseline (confidence: **${confidence}/100**)\n- Security: ${scores.security ?? "—"} · Reliability: ${scores.reliability ?? "—"} · Performance: ${scores.performance ?? "—"}\n- Architecture: ${scores.architecture ?? "—"} · Database: ${scores.database ?? "—"}\n- **${gaps.length} gaps** total\n\nTry: "security gaps", "what's good about reliability?", "how can I improve?", or "where does this repo lack?"`,
     gaps,
     sources: [],
   };

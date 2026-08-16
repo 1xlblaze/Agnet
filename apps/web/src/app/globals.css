@@ -5,11 +5,32 @@
 html, body {
   min-height: 100%;
   background:
-    radial-gradient(1200px 600px at 10% -10%, #1f6f5b55, transparent 60%),
-    radial-gradient(900px 500px at 90% 0%, #c45c2633, transparent 55%),
+    radial-gradient(1200px 600px at 10% -10%, #1f6f5b44, transparent 60%),
+    radial-gradient(900px 500px at 90% 0%, #c45c2622, transparent 55%),
     linear-gradient(160deg, #071512 0%, #0f2a24 45%, #12201c 100%);
   color: #e8f3ef;
   font-family: "Source Sans 3", Segoe UI, sans-serif;
 }
 
 a { color: inherit; text-decoration: none; }
+
+@layer components {
+  .card {
+    @apply rounded-xl border border-foam/10 bg-ink/35 shadow-lg shadow-black/20;
+  }
+  .btn-primary {
+    @apply rounded-lg bg-moss px-4 py-2 text-sm font-semibold text-foam transition hover:brightness-110 disabled:opacity-50;
+  }
+  .btn-secondary {
+    @apply rounded-lg border border-foam/20 bg-ink/40 px-4 py-2 text-sm font-medium text-sand/90 transition hover:border-moss/40 hover:text-foam disabled:opacity-50;
+  }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.animate-rise {
+  animation: fadeIn 0.4s ease forwards;
+}
