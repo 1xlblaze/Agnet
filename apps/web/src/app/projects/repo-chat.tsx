@@ -8,7 +8,7 @@ import { RagSkillsPanel } from "@/components/agent/rag-skills-panel";
 
 const SUGGESTIONS = [
   "What's this repo about?",
-  "Where does this repo lack?",
+  "Explain architecture",
   "What security gaps exist?",
   "How can I improve reliability?",
 ];
