@@ -130,7 +130,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </Link>
         <div className="flex items-center gap-1">
           <ThemeToggle compact />
-          <button type="button" className="btn-ghost px-3 py-2" onClick={() => setOpen(!open)} aria-label="Toggle menu">
+          <button type="button" className="btn-ghost px-3 py-2" onClick={() => setOpen(!open)} aria-label="Toggle menu" aria-expanded={open}>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
               {open ? <path d="M18 6L6 18M6 6l12 12" /> : <path d="M4 6h16M4 12h16M4 18h16" />}
             </svg>
