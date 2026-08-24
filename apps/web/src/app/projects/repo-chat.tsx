@@ -143,6 +143,7 @@ export function RepoChat({ repositoryId, repoName }: { repositoryId: string; rep
           placeholder="Ask about gaps, security, architecture…"
           value={input}
           onChange={(e) => setInput(e.target.value)}
+          aria-label="Ask a question about this repository"
           disabled={pending}
         />
         <button type="submit" disabled={pending || !input.trim()} className="btn-primary shrink-0">
