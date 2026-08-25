@@ -1,3 +1,6 @@
 ## 2024-08-24 - Accessibility state attributes and hidden labels
 **Learning:** Found that the responsive mobile menu toggle button (`apps/web/src/components/layout/app-shell.tsx`) was missing `aria-expanded` to communicate its state to screen readers. Also, discovered that the chat input field (`apps/web/src/app/projects/repo-chat.tsx`) lacked an explicit `<label>`, so using `aria-label` provides a hidden label that screen readers can rely on.
 **Action:** Ensure dynamic UI components explicitly declare their open/closed states using `aria-expanded`, and always provide an `aria-label` to form fields without an explicit visual label.
+## 2024-10-24 - Animated loading state for screen readers
+**Learning:** Found that the chat submit button used a text ellipsis ("…") for loading, which causes screen readers to read "dot dot dot" rather than conveying the loading state. Using a visual spinner combined with an internal hidden span containing `aria-label="Asking..."` provides better feedback visually while clearly announcing the state to screen readers.
+**Action:** For buttons with interactive loading states, use a visual spinner wrapped in an accessible label instead of simple text ellipsis, and use fixed-width classes (e.g., `w-20`) to prevent layout shift.
