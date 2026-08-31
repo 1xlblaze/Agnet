@@ -97,7 +97,7 @@ export function RepoChat({ repositoryId, repoName }: { repositoryId: string; rep
             key={s}
             type="button"
             disabled={pending}
-            className="rounded-full border border-border bg-surface px-3 py-1.5 text-xs text-text-secondary transition hover:border-accent/40 hover:bg-accent/5 hover:text-accent disabled:opacity-50"
+            className="rounded-full border border-border bg-surface px-3 py-1.5 text-xs text-text-secondary transition hover:border-accent/40 hover:bg-accent/5 hover:text-accent disabled:opacity-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50"
             onClick={() => ask(s)}
           >
             {s}
