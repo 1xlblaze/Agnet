@@ -45,7 +45,10 @@ function NavIcon({ name, active }: { name: string; active: boolean }) {
     ),
   };
   return (
-    <span className={`flex h-8 w-8 items-center justify-center rounded-lg ${active ? "bg-accent/10" : "bg-surface-overlay"}`}>
+    <span
+      className={`flex h-8 w-8 items-center justify-center rounded-lg ${active ? "bg-accent/10" : "bg-surface-overlay"}`}
+      aria-hidden="true"
+    >
       {icons[name]}
     </span>
   );
@@ -58,6 +61,7 @@ function NavLink({ href, label, onClick }: { href: string; label: string; onClic
     <Link
       href={href}
       onClick={onClick}
+      aria-current={active ? "page" : undefined}
       className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all ${
         active
           ? "bg-accent/10 text-accent shadow-sm ring-1 ring-accent/20"
@@ -80,6 +84,7 @@ function MobileBottomNav() {
           <Link
             key={item.href}
             href={item.href}
+            aria-current={active ? "page" : undefined}
             className={`flex flex-1 flex-col items-center gap-1 py-2.5 text-[10px] font-medium transition ${
               active ? "text-accent" : "text-text-muted"
             }`}
