@@ -146,8 +146,14 @@ export function RepoChat({ repositoryId, repoName }: { repositoryId: string; rep
           aria-label="Ask a question about this repository"
           disabled={pending}
         />
-        <button type="submit" disabled={pending || !input.trim()} className="btn-primary shrink-0">
-          {pending ? "…" : "Ask"}
+        <button type="submit" disabled={pending || !input.trim()} className="btn-primary min-w-[80px] shrink-0">
+          {pending ? (
+            <span className="flex items-center justify-center" aria-label="Sending message...">
+              <span className="h-4 w-4 animate-spin rounded-full border-2 border-canvas/30 border-t-canvas" />
+            </span>
+          ) : (
+            "Ask"
+          )}
         </button>
       </form>
       {err ? <p className="px-4 pb-3 text-xs text-danger">{err}</p> : null}
