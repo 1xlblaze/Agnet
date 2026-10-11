@@ -334,9 +334,10 @@ function mergeAstIntoGraph(graph: Graph, ast: AstIndex, serviceName: string): Gr
     if (s.kind === "table") {
       addNode(`table:${s.name}`, "Table", s.name);
       addEdge(`svc:${serviceName}`, `table:${s.name}`, "WRITES");
-    } else if (s.kind === "function" && s.exported && s.name.startsWith("route:")) {
-      addNode(`api:${s.name}`, "API", s.name.replace("route:", ""));
-      addEdge(`svc:${serviceName}`, `api:${s.name}`, "EXPOSES");
+    } else if (s.kind === "function" && s.exported && s.id.includes("::function::route:")) {
+      const routeLabel = s.name;
+      addNode(`api:${s.id}`, "API", routeLabel);
+      addEdge(`svc:${serviceName}`, `api:${s.id}`, "EXPOSES");
     } else if (s.kind === "package") {
       addNode(`mod:${s.name}`, "Module", s.name);
       addEdge(`svc:${serviceName}`, `mod:${s.name}`, "DEPENDS_ON");
