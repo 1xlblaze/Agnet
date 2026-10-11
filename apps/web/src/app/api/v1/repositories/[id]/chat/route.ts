@@ -1,4 +1,5 @@
 import { fail, ok } from "@/lib/api-response";
+import { chatAboutRepo } from "@/lib/agentguard/repo-reports";
 import { proxyEdge, useEdgeApi } from "@/lib/edge-proxy";
 
 export async function POST(req: Request, ctx: { params: Promise<{ id: string }> }) {
@@ -13,7 +14,7 @@ export async function POST(req: Request, ctx: { params: Promise<{ id: string }> 
         headers: { "Content-Type": "application/json" },
       });
     }
-    return fail("not_configured", "Chat requires Supabase edge API", 503);
+    return ok(await chatAboutRepo(id, body.message as string));
   } catch (e) {
     return fail("chat_failed", e instanceof Error ? e.message : "error", 500);
   }

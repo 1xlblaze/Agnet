@@ -1,5 +1,5 @@
 import { fail, ok } from "@/lib/api-response";
-import { analyzeRepository } from "@/lib/agentguard/db";
+import { analyzeRepository } from "@/lib/agentguard/repository-scan";
 import { proxyEdge, useEdgeApi } from "@/lib/edge-proxy";
 
 export const maxDuration = 60;
