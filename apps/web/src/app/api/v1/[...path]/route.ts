@@ -1,9 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const SUPABASE_URL =
-  process.env.SUPABASE_URL ||
-  process.env.NEXT_PUBLIC_SUPABASE_URL ||
-  "https://iltfwvonkotfdvtrhejv.supabase.co";
+const SUPABASE_URL = process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || "";
 
 async function proxy(req: NextRequest, segments: string[]) {
   if (!SUPABASE_URL) {

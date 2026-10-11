@@ -66,7 +66,12 @@ export function ConnectGitHubForm() {
               router.push(`/projects/${data.project?.id || data.project_id}`);
               router.refresh();
             } catch (e) {
-              setErr(e instanceof Error ? e.message : "failed");
+              const msg = e instanceof Error ? e.message : "failed";
+              setErr(
+                msg === "fetch failed" || msg === "Failed to fetch"
+                  ? "API unreachable. Check Vercel env (DATABASE_URL) or restore the Supabase project / set AGENTGUARD_USE_EDGE_API=false."
+                  : msg,
+              );
             }
           });
         }}
