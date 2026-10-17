@@ -1,10 +1,10 @@
 import "./globals.css";
-import { AppShell } from "@/components/layout/app-shell";
 import { ThemeProvider } from "@/components/theme/theme-provider";
 
 export const metadata = {
-  title: "AgentGuard",
-  description: "Verify AI-generated changes before they reach production",
+  title: "AgentGuard Studio",
+  description:
+    "OpenHands-style agentic development: PRD to production flows, coding agents, and a verification control plane",
 };
 
 const themeScript = `
@@ -30,9 +30,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
       </head>
       <body>
-        <ThemeProvider>
-          <AppShell>{children}</AppShell>
-        </ThemeProvider>
+        <ThemeProvider>{children}</ThemeProvider>
       </body>
     </html>
   );
