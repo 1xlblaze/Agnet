@@ -6,7 +6,8 @@ import { useState } from "react";
 import { ThemeToggle } from "@/components/theme/theme-toggle";
 
 const NAV = [
-  { href: "/", label: "Dashboard", short: "Home" },
+  { href: "/dashboard", label: "Dashboard", short: "Home" },
+  { href: "/flows", label: "Flows", short: "Flows" },
   { href: "/projects", label: "Projects", short: "Projects" },
   { href: "/pull-requests", label: "Pull Requests", short: "PRs" },
   { href: "/deployments", label: "Deployments", short: "Deploy" },
@@ -15,7 +16,7 @@ const NAV = [
 function NavIcon({ name, active }: { name: string; active: boolean }) {
   const cls = active ? "text-accent" : "text-text-muted";
   const icons: Record<string, React.ReactNode> = {
-    "/": (
+    "/dashboard": (
       <svg className={cls} width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
         <rect x="3" y="3" width="7" height="7" rx="1" />
         <rect x="14" y="3" width="7" height="7" rx="1" />
@@ -43,6 +44,15 @@ function NavIcon({ name, active }: { name: string; active: boolean }) {
         <path d="M2 12l10 5 10-5" />
       </svg>
     ),
+    "/flows": (
+      <svg className={cls} width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+        <path d="M6 3v12" />
+        <circle cx="6" cy="18" r="3" />
+        <path d="M18 9v12" />
+        <circle cx="18" cy="6" r="3" />
+        <path d="M6 15h8a4 4 0 0 1 4 4v1" />
+      </svg>
+    ),
   };
   return (
     <span className={`flex h-8 w-8 items-center justify-center rounded-lg ${active ? "bg-accent/10" : "bg-surface-overlay"}`}>
@@ -53,7 +63,7 @@ function NavIcon({ name, active }: { name: string; active: boolean }) {
 
 function NavLink({ href, label, onClick }: { href: string; label: string; onClick?: () => void }) {
   const pathname = usePathname();
-  const active = href === "/" ? pathname === "/" : pathname.startsWith(href);
+  const active = href === "/dashboard" ? pathname === "/dashboard" : pathname.startsWith(href);
   return (
     <Link
       href={href}
@@ -75,7 +85,7 @@ function MobileBottomNav() {
   return (
     <nav className="fixed inset-x-0 bottom-0 z-40 flex border-t border-border bg-surface/95 backdrop-blur-xl lg:hidden">
       {NAV.map((item) => {
-        const active = item.href === "/" ? pathname === "/" : pathname.startsWith(item.href);
+        const active = item.href === "/dashboard" ? pathname === "/dashboard" : pathname.startsWith(item.href);
         return (
           <Link
             key={item.href}
@@ -100,7 +110,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     <div className="flex min-h-screen">
       <aside className="fixed inset-y-0 left-0 z-40 hidden w-64 flex-col border-r border-border bg-surface/95 backdrop-blur-xl lg:flex">
         <div className="border-b border-border px-5 py-6">
-          <Link href="/" className="group block">
+          <Link href="/dashboard" className="group block">
             <div className="flex items-center gap-3">
               <div className="agent-orb text-[10px] font-bold">AG</div>
               <div>
@@ -124,7 +134,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
       </aside>
 
       <div className="fixed inset-x-0 top-0 z-50 flex items-center justify-between border-b border-border bg-surface/95 px-4 py-3 backdrop-blur-xl lg:hidden">
-        <Link href="/" className="flex items-center gap-2">
+        <Link href="/dashboard" className="flex items-center gap-2">
           <div className="agent-orb h-8 w-8 text-[9px]">AG</div>
           <span className="font-display text-lg font-semibold">AgentGuard</span>
         </Link>

@@ -8,6 +8,7 @@ tidy:
 
 migrate:
 	psql "$(DATABASE_URL)" -f migrations/001_init.sql
+	psql "$(DATABASE_URL)" -f migrations/002_agent_flows.sql
 
 test:
 	go test ./...

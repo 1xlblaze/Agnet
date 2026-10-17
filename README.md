@@ -1,8 +1,10 @@
-# AgentGuard
+# AgentGuard Studio
 
-Production control plane for AI coding agents.
+Production control plane and **OpenHands-style agent flows** for AI coding agents.
 
 > **AgentGuard lets engineering teams give AI coding agents more autonomy without giving up production safety.**
+
+**Studio** (`/`) — PRD → production flows and a visual flow builder. **App** (`/dashboard`) — repository verification, PR analysis, and deploy certificates.
 
 ## Start here
 
