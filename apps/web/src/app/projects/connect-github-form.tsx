@@ -73,15 +73,21 @@ export function ConnectGitHubForm() {
       >
         <div className="flex-1">
           <label htmlFor="github-repo" className="mb-1.5 block text-xs font-medium text-text-muted">
-            GitHub repository
+            GitHub repository <span className="text-danger">*</span>
           </label>
           <input
             id="github-repo"
             className="input"
             placeholder="owner/repo"
             value={github}
-            onChange={(e) => setGithub(e.target.value)}
+            onChange={(e) => {
+              setGithub(e.target.value);
+              if (err) setErr("");
+            }}
             disabled={pending}
+            required
+            aria-invalid={!!err}
+            aria-describedby={err ? "github-repo-error" : undefined}
           />
         </div>
         <button type="submit" className="btn-primary shrink-0" disabled={pending}>
@@ -95,7 +101,7 @@ export function ConnectGitHubForm() {
           )}
         </button>
       </form>
-      {err ? <p className="px-5 pb-4 text-sm text-danger sm:px-6">{err}</p> : null}
+      {err ? <p id="github-repo-error" className="px-5 pb-4 text-sm text-danger sm:px-6">{err}</p> : null}
       {msg ? <p className="px-5 pb-4 text-sm text-accent sm:px-6">{msg}</p> : null}
     </div>
   );
