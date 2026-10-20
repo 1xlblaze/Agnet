@@ -58,7 +58,7 @@ function NavLink({ href, label, onClick }: { href: string; label: string; onClic
     <Link
       href={href}
       onClick={onClick}
-      className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all ${
+      className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${
         active
           ? "bg-accent/10 text-accent shadow-sm ring-1 ring-accent/20"
           : "text-text-secondary hover:bg-surface-overlay hover:text-text-primary"
