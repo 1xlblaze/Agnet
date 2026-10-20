@@ -1,3 +1,7 @@
 ## 2024-08-24 - Accessibility state attributes and hidden labels
 **Learning:** Found that the responsive mobile menu toggle button (`apps/web/src/components/layout/app-shell.tsx`) was missing `aria-expanded` to communicate its state to screen readers. Also, discovered that the chat input field (`apps/web/src/app/projects/repo-chat.tsx`) lacked an explicit `<label>`, so using `aria-label` provides a hidden label that screen readers can rely on.
 **Action:** Ensure dynamic UI components explicitly declare their open/closed states using `aria-expanded`, and always provide an `aria-label` to form fields without an explicit visual label.
+
+## 2026-08-29 - Accessibility for Abstract Data Visualizations
+**Learning:** Found that custom data visualizations, like the confidence ring and score bars (`apps/web/src/components/ui/confidence-ring.tsx` and `score-bar.tsx`), are difficult for screen readers to interpret unless explicitly labeled. Wrapping visual elements with `aria-hidden="true"` and applying `role="meter"`, `aria-valuenow`, `aria-valuemin`, and `aria-valuemax` to the container provides a clean and standard experience for screen readers.
+**Action:** Always wrap custom numeric visualizations in a container with `role="meter"` and appropriate ARIA attributes, and hide the inner complex SVGs or text elements using `aria-hidden="true"` to prevent duplicate or confusing announcements.

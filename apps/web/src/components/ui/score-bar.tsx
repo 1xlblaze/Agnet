@@ -3,12 +3,19 @@ import { confidenceColor } from "./confidence-ring";
 export function ScoreBar({ label, value }: { label: string; value: number }) {
   const color = confidenceColor(value);
   return (
-    <div className="group space-y-2">
-      <div className="flex items-center justify-between text-sm">
+    <div
+      className="group space-y-2"
+      role="meter"
+      aria-label={`${label} score`}
+      aria-valuenow={value}
+      aria-valuemin={0}
+      aria-valuemax={100}
+    >
+      <div className="flex items-center justify-between text-sm" aria-hidden="true">
         <span className="text-text-secondary">{label}</span>
         <span className="font-semibold tabular-nums text-text-primary">{value}</span>
       </div>
-      <div className="h-1.5 overflow-hidden rounded-full bg-white/5">
+      <div className="h-1.5 overflow-hidden rounded-full bg-white/5" aria-hidden="true">
         <div
           className="h-full rounded-full transition-all duration-700 ease-out"
           style={{ width: `${Math.min(100, value)}%`, backgroundColor: color }}

@@ -13,8 +13,16 @@ export function ConfidenceRing({ value, size = "lg" }: { value: number; size?: "
   const offset = c - (value / 100) * c;
 
   return (
-    <div className="relative inline-flex items-center justify-center" style={{ width: dim, height: dim }}>
-      <svg className="-rotate-90" width={dim} height={dim} viewBox={`0 0 ${dim} ${dim}`}>
+    <div
+      className="relative inline-flex items-center justify-center"
+      style={{ width: dim, height: dim }}
+      role="meter"
+      aria-label="Confidence score"
+      aria-valuenow={value}
+      aria-valuemin={0}
+      aria-valuemax={100}
+    >
+      <svg className="-rotate-90" width={dim} height={dim} viewBox={`0 0 ${dim} ${dim}`} aria-hidden="true">
         <circle
           cx={dim / 2}
           cy={dim / 2}
@@ -36,7 +44,7 @@ export function ConfidenceRing({ value, size = "lg" }: { value: number; size?: "
           className="transition-all duration-700"
         />
       </svg>
-      <div className="absolute text-center">
+      <div className="absolute text-center" aria-hidden="true">
         <p className={`font-display font-semibold text-text-primary ${size === "sm" ? "text-2xl" : "text-4xl"}`}>
           {value}
         </p>
