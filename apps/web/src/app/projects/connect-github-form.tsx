@@ -73,7 +73,8 @@ export function ConnectGitHubForm() {
       >
         <div className="flex-1">
           <label htmlFor="github-repo" className="mb-1.5 block text-xs font-medium text-text-muted">
-            GitHub repository
+            GitHub repository <span className="text-danger" aria-hidden="true">*</span>
+            <span className="sr-only">(required)</span>
           </label>
           <input
             id="github-repo"
@@ -82,9 +83,14 @@ export function ConnectGitHubForm() {
             value={github}
             onChange={(e) => setGithub(e.target.value)}
             disabled={pending}
+            required
+            pattern="[^/]+/[^/]+"
+            title="Must be in format owner/repo"
+            aria-invalid={err ? "true" : "false"}
+            aria-describedby={err ? "github-repo-error" : msg ? "github-repo-msg" : undefined}
           />
         </div>
-        <button type="submit" className="btn-primary shrink-0" disabled={pending}>
+        <button type="submit" className="btn-primary shrink-0" disabled={pending || !github.trim()}>
           {pending ? (
             <span className="flex items-center gap-2">
               <span className="h-4 w-4 animate-spin rounded-full border-2 border-canvas/30 border-t-canvas" />
@@ -95,8 +101,8 @@ export function ConnectGitHubForm() {
           )}
         </button>
       </form>
-      {err ? <p className="px-5 pb-4 text-sm text-danger sm:px-6">{err}</p> : null}
-      {msg ? <p className="px-5 pb-4 text-sm text-accent sm:px-6">{msg}</p> : null}
+      {err ? <p id="github-repo-error" role="alert" className="px-5 pb-4 text-sm text-danger sm:px-6">{err}</p> : null}
+      {msg ? <p id="github-repo-msg" role="status" className="px-5 pb-4 text-sm text-accent sm:px-6">{msg}</p> : null}
     </div>
   );
 }
