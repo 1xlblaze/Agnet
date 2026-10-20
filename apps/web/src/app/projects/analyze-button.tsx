@@ -11,7 +11,7 @@ export function AnalyzeButton({ repositoryId, label = "Run baseline scan" }: { r
   return (
     <div>
       <button
-        className="btn-secondary text-xs"
+        className="btn-secondary text-xs transition-all"
         disabled={pending}
         type="button"
         onClick={() => {
@@ -30,7 +30,14 @@ export function AnalyzeButton({ repositoryId, label = "Run baseline scan" }: { r
           });
         }}
       >
-        {pending ? "Scanning…" : label}
+        {pending ? (
+          <span className="flex items-center gap-1.5">
+            <span className="h-3 w-3 animate-spin rounded-full border-2 border-current/30 border-t-current" />
+            <span>Scanning…</span>
+          </span>
+        ) : (
+          label
+        )}
       </button>
       {err ? <p className="mt-1 text-xs text-ember">{err}</p> : null}
     </div>
