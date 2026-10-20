@@ -58,7 +58,7 @@ function NavLink({ href, label, onClick }: { href: string; label: string; onClic
     <Link
       href={href}
       onClick={onClick}
-      className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all ${
+      className={`flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:ring-offset-1 focus-visible:ring-offset-surface ${
         active
           ? "bg-accent/10 text-accent shadow-sm ring-1 ring-accent/20"
           : "text-text-secondary hover:bg-surface-overlay hover:text-text-primary"
@@ -80,7 +80,7 @@ function MobileBottomNav() {
           <Link
             key={item.href}
             href={item.href}
-            className={`flex flex-1 flex-col items-center gap-1 py-2.5 text-[10px] font-medium transition ${
+            className={`flex flex-1 flex-col items-center gap-1 py-2.5 text-[10px] font-medium transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent/50 focus-visible:ring-offset-1 focus-visible:ring-offset-surface ${
               active ? "text-accent" : "text-text-muted"
             }`}
           >
